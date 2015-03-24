@@ -1,0 +1,9 @@
+name = "Islandora Solr Customizations"
+description = "Replace resource index queries with SOLR queries"
+dependencies[] = islandora_book
+dependencies[] = islandora_newspaper
+dependencies[] = islandora_solr
+package = Islandora Local Customization
+version = 7.x-dev
+core = 7.x
+configure = admin/islandora/tools/custom_solr
