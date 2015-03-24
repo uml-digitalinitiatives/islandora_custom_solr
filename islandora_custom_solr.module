@@ -52,14 +52,12 @@ function islandora_custom_solr_islandora_newspapercmodel_islandora_view_object(A
  * Implements hook_module_implements_alter().
  */
 function islandora_custom_solr_module_implements_alter(&$implementations, $hook) {
-  if (strtolower($hook) == 'islandora_newspapercmodel_islandora_view_object' &&
-    variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
+  if (strtolower($hook) == 'islandora_newspapercmodel_islandora_view_object' &&  variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
     if (array_key_exists('islandora_newspaper', $implementations)) {
       unset($implementations['islandora_newspaper']);
     }
   }
-  else if (strtolower($hook) == 'islandora_bookcmodel_islandora_view_object' &&
-    variable_get('islandora_custom_solr_replace_books', FALSE)) {
+  elseif (strtolower($hook) == 'islandora_bookcmodel_islandora_view_object' && variable_get('islandora_custom_solr_replace_books', FALSE)) {
     if (array_key_exists('islandora_book', $implementations)) {
       unset($implementations['islandora_book']);
     }

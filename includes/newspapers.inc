@@ -3,6 +3,7 @@
  * @file
  * Functions for newspaper Solr replacements.
  */
+
 /**
  * Generates the Solr list of newspaper issues.
  */
