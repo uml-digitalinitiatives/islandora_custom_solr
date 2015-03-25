@@ -7,7 +7,7 @@
 /**
  * Generates the Solr list of newspaper issues.
  */
-function islandora_custom_solr_preprocess_islandora_newspaper(array $variables) {
+function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
   drupal_add_js('misc/collapse.js');
   $object = $variables['object'];
@@ -114,7 +114,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   $solr_param = array(
     'rows' => 30000,
     'limit' => 30000,
-    'fl' => 'mods_originInfo_dateIssued_dt, fgs_label_s, PID, RELS_EXT_isSequenceNumber',
+    'fl' => 'mods_originInfo_dateIssued_dt, fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
     'hl' => 'false',
     'facet' => 'false',
   );
@@ -152,13 +152,16 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
       $vars = array('@pid' => $o['PID']);
       watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
     }
-    if (!array_key_exists('RELS_EXT_isSequenceNumber', $o)) {
-      $o['RELS_EXT_isSequenceNumber'] = 0;
+    if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+    }
+    else {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
     }
     return array(
       'pid' => $o['PID'],
       'label' => $o['fgs_label_s'],
-      'sequence' => $o['RELS_EXT_isSequenceNumber'],
+      'sequence' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
       'issued' => $issued,
     );
   };

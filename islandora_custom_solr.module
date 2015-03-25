@@ -27,12 +27,14 @@ function islandora_custom_solr_menu() {
 function islandora_custom_solr_theme($existing, $type, $theme, $path) {
   return array(
     'islandora_custom_solr_newspaper' => array(
+      'function' => '__islandora_custom_solr_theme_islandora_newspaper',
       'pattern' => 'islandora_newspaper__',
       'variables' => array('object' => NULL),
       'file' => 'includes/newspaper.inc',
     ),
-    'islandora_custom_solr_book' => array(
+    'islandora_custom_solr_book_book' => array(
       'pattern' => 'islandora_book__',
+      'template' => 'theme/islandora-custom-solr-book-book',
       'variables' => array('object' => NULL),
       'file' => 'includes/book.inc',
     ),
@@ -70,7 +72,7 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
  */
 function islandora_custom_solr_islandora_bookcmodel_islandora_view_object($object) {
   if (variable_get('islandora_custom_solr_replace_books', FALSE)) {
-    $output = theme('islandora_custom_solr_book', array('object' => $object));
-    return array('islandora_custom_solr_book' => $output);
+    $output = theme('islandora_custom_solr_book_book', array('object' => $object));
+    return array('islandora_custom_solr_book_book' => $output);
   }
 }

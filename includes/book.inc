@@ -7,7 +7,7 @@
 /**
  * Implements hook_preprocess_theme().
  */
-function islandora_custom_solr_preprocess_islandora_book_book(array &$variables) {
+function islandora_custom_solr_preprocess_islandora_custom_solr_book_book(array &$variables) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   $object = $variables['object'];
   $params = array(
@@ -39,7 +39,7 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
   $solr_param = array(
     'rows' => 100000,
     'limit' => 100000,
-    'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber',
+    'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
     'hl' => 'false',
     'facet' => 'false',
   );
@@ -68,19 +68,24 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
 
   // Get rid of the "extra" info...
   $map = function($o) {
-    foreach ($o as $key => &$info) {
-      $info = $info['value'];
+    if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+    }
+    else {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
     }
 
-    $o = array_filter($o);
-
-    return $o;
+    return array(
+      'pid' => $o['PID'],
+      'label' => $o['fgs_label_s'],
+      'page' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+    );
   };
   $pages = array_map($map, $results);
 
   // Grab the PIDs...
   $get_pid = function($o) {
-    return $o['PID'];
+    return $o['pid'];
   };
   $pids = array_map($get_pid, $pages);
 
@@ -90,8 +95,8 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
 
   // Sort the pages into their proper order.
   $sort = function($a, $b) {
-    $a = (is_array($a) && isset($a['RELS_EXT_isSequenceNumber'])) ? $a['RELS_EXT_isSequenceNumber'] : 0;
-    $b = (is_array($b) && isset($b['RELS_EXT_isSequenceNumber'])) ? $b['RELS_EXT_isSequenceNumber'] : 0;
+    $a = (is_array($a) && isset($a['page'])) ? $a['page'] : 0;
+    $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
     if ($a == $b) {
       return 0;
     }
