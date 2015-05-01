@@ -21,9 +21,9 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
   $req_modules = array(
     'newspaper' => module_exists('islandora_newspaper'),
     'book' => module_exists('islandora_book'),
-    'compound' => module_exists('islandora_compound'),
+    'compound' => module_exists('islandora_compound_object'),
   );
-  
+
   $form = array(
     'islandora_custom_solr_replace_newspaper' => array(
       '#type' => 'checkbox',
