@@ -55,7 +55,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
     'islandora_custom_solr_compound_solr_relationship' => array(
       '#type' => 'textfield',
       '#title' => t('Compound Solr relationship field'),
-      '#default_value' => variable_get('islandora_custom_solr_compound_relationship', 'RELS_EXT_isConstituentOf_uri_mt'),
+      '#default_value' => variable_get('islandora_custom_solr_compound_solr_relationship', 'RELS_EXT_isConstituentOf_uri_mt'),
       '#element_validate' => array('islandora_custom_solr_validate_solr_relationship'),
       '#states' => array(
         'visible' => array(

@@ -6,6 +6,15 @@
 
 /**
  * Return an array of pids that are part of a compound object.
+ *
+ * @param string $pid
+ *   the pid of the object to get compound parts for
+ * @param bool $ret_title
+ *   whether to return the title and sequence number along with the pid 
+ *
+ * @return array
+ *   array of a single object pid, title and sequence number or
+ *   an array of pids
  */
 function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALSE) {
   module_load_include('inc', 'islandora_solr_search', 'includes/query_processor');
@@ -14,7 +23,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $escaped_pid = str_replace(':', '_', $pid);
   $objects = array();
 
-  $parent_field = variable_get('islandora_custom_solr_compound_relationship', 'RELS_EXT_isConstituentOf_uri_mt');  
+  $parent_field = variable_get('islandora_custom_solr_compound_solr_relationship', 'RELS_EXT_isConstituentOf_uri_mt');  
   $solr_param = array(
     'rows' => 100000,
     'limit' => 100000,
@@ -25,6 +34,15 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $solr_query = "($parent_field:\"info:fedora/{$pid}\")";
   $solr_build->buildQuery($solr_query, $solr_param);
   $solr_build->solrParams = array_merge($solr_build->solrParams, $solr_param);
+  // If we remove compound children from search results, we need to remove that restriction here.
+  if (isset($solr_build->solrParams['fq'])) {
+    foreach($solr_build->solrParams['fq'] as $idx => $val) {
+      if ($val == variable_get('islandora_compound_object_solr_fq', '-RELS_EXT_isConstituentOf_uri_mt:*')) {
+        unset($solr_build->solrParams['fq'][$idx]);
+        break;
+      }
+    }
+  }
 
   $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
   $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');
@@ -45,10 +63,21 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
     $results = $solr_results['response']['docs'];
   }
 
+  $escaped_field = "RELS_EXT_isSequenceNumberOf{$escaped_pid}_literal_ms";
+  $map = function($o) use ($escaped_field) {
+    return array(
+      'pid' => $o["PID"],
+      'title' => $o['fgs_label_s'],
+      'seq' => (array_key_exists($escaped_field, $o) ? (string)$o[$escaped_field][0] : NULL),
+    );
+  };
+
+  $results = array_map($map, $results);
+
   // Sort the objects into their proper order.
   $sort = function($a, $b) {
-    $a = $a["RELS_EXT_isSequenceNumberOf{$escaped_pid}_literal_ms"];
-    $b = $b["RELS_EXT_isSequenceNumberOf{$escaped_pid}_literal_ms"];
+    $a = $a['seq'];
+    $b = $b['seq'];
     if ($a === $b) {
       return 0;
     }
@@ -63,17 +92,17 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   uasort($results, $sort);
 
   foreach ($results as $result) {
-    $object = islandora_object_load($result['object']['value']);
+    $object = islandora_object_load($result['pid']);
     if (islandora_object_access(ISLANDORA_VIEW_OBJECTS, $object)) {
       if ($ret_title) {
-        $objects[$result['PID']] = array(
+        $objects[$result['pid']] = array(
           'pid' => $result['PID'],
-          'title' => $result['fgs_label_s'],
-          'seq' => $result["RELS_EXT_isSequenceNumberOf{$escaped_pid}_literal_ms"],
+          'title' => $result['title'],
+          'seq' => $result["seq"],
         );
       }
       else {
-        $objects[] = $result['PID'];
+        $objects[] = $result['pid'];
       }
     }
   }
