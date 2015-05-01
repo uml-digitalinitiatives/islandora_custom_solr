@@ -34,7 +34,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $solr_query = "($parent_field:\"info:fedora/{$pid}\")";
   $solr_build->buildQuery($solr_query, $solr_param);
   $solr_build->solrParams = array_merge($solr_build->solrParams, $solr_param);
-  // we need to remove the solr child object restriction.
+  // We need to remove the solr child object restriction.
   if (isset($solr_build->solrParams['fq'])) {
     foreach ($solr_build->solrParams['fq'] as $idx => $val) {
       if ($val == variable_get('islandora_compound_object_solr_fq', '-RELS_EXT_isConstituentOf_uri_mt:*')) {
