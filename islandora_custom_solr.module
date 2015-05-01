@@ -65,6 +65,11 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
       unset($implementations['islandora_book']);
     }
   }
+  elseif (strtolower($hook) == 'islandora_compoundcmodel_islandora_view_object' && variable_get('islandora_custom_solr_replace_compound', FALSE)) {
+    if (array_key_exists('islandora_compound', $implementations)) {
+      unset($implementations['islandora_compound']);
+    }
+  }
 }
 
 /**
@@ -76,3 +81,18 @@ function islandora_custom_solr_islandora_bookcmodel_islandora_view_object($objec
     return array('islandora_custom_solr_book_book' => $output);
   }
 }
+
+function islandora_custom_solr_islandora_compoundCModel_islandora_view_object($object) {
+  if (variable_get('islandora_custom_solr_replace_compound', FALSE)) {
+    module_load_include('inc', 'islandora_custom_solr', 'includes/compound');
+    $children = islandora_custom_solr_compound_object_get_parts($object->id);
+    if (!empty($children)) {
+      $first_child_id = reset($children);
+      if ($first_child_id != $object->id) {
+        $first_child = islandora_object_load($first_child_id);
+        return islandora_view_object($first_child);
+      }
+    }
+  }
+}
+

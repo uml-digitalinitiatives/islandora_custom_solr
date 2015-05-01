@@ -17,19 +17,70 @@
  *   The Drupal form definition.
  */
 function islandora_custom_solr_admin_settings_form(array $form, array &$form_state) {
+  // Need the module to do the replacement.
+  $req_modules = array(
+    'newspaper' => module_exists('islandora_newspaper'),
+    'book' => module_exists('islandora_book'),
+    'compound' => module_exists('islandora_compound'),
+  );
+  
   $form = array(
     'islandora_custom_solr_replace_newspaper' => array(
       '#type' => 'checkbox',
       '#title' => t('Enable newspaper replacements'),
-      '#default_value' => variable_get('islandora_custom_solr_replace_newspaper', FALSE),
+      '#disabled' => (!$req_modules['newspaper']),
+      '#description' => t('Replaces newspapers get_issues RI queries with Solr ones.' .
+        (!$req_modules['newspaper'] ? " Requires Islandora Newspaper Solution Pack." : "")),
+      '#default_value' => (!$req_modules['newspaper'] ? FALSE : variable_get('islandora_custom_solr_replace_newspaper', FALSE)),
       '#return_value' => TRUE,
     ),
     'islandora_custom_solr_replace_books' => array(
       '#type' => 'checkbox',
       '#title' => t('Enable book replacements'),
-      '#default_value' => variable_get('islandora_custom_solr_replace_books', FALSE),
+      '#disabled' => (!$req_modules['book']),
+      '#description' => t('Replaces book get_pages RI queries with Solr ones.' .
+        (!$req_modules['book'] ? " Requires Islandora Book Solution Pack." : "")),
+      '#default_value' => (!$req_modules['book'] ? FALSE : variable_get('islandora_custom_solr_replace_books', FALSE)),
       '#return_value' => TRUE,
     ),
+    'islandora_custom_solr_replace_compound' => array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable compound replacements'),
+      '#disabled' => (!$req_modules['compound']),
+      '#description' => t('Replaces compound get_parts RI queries with Solr ones.' .
+        (!$req_modules['compound'] ? " Requires Islandora Compound Solution Pack." : "")),
+      '#default_value' => (!$req_modules['compound'] ? FALSE : variable_get('islandora_custom_solr_replace_compound', FALSE)),
+      '#return_value' => TRUE,
+    ),
+    'islandora_custom_solr_compound_solr_relationship' => array(
+      '#type' => 'textfield',
+      '#title' => t('Compound Solr relationship field'),
+      '#default_value' => variable_get('islandora_custom_solr_compound_relationship', 'RELS_EXT_isConstituentOf_uri_mt'),
+      '#element_validate' => array('islandora_custom_solr_validate_solr_relationship'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="islandora_custom_solr_replace_compound"]' => array('checked' => TRUE),
+        ),
+        'required' => array(
+          ':input[name="islandora_custom_solr_replace_compound"]' => array('checked' => TRUE),
+        ),
+      ),
+    )
   );
   return system_settings_form($form);
+}
+
+/**
+ * Solr compound relationship element state validation callback.
+ *
+ * @param array $element
+ *   The form element.
+ * @param array $form_state
+ *   The form state.
+ */
+function islandora_custom_solr_validate_solr_relationship($element, &$form_state) {
+  if ($form_state['values']['islandora_custom_solr_replace_compound'] &&
+    empty($form_state['values']['islandora_custom_solr_compound_solr_relationship'])) {
+    form_error($element, t('Compound Solr relationship field is required.'));
+  }
 }
