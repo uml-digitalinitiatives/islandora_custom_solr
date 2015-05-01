@@ -24,9 +24,9 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
     'compound' => module_exists('islandora_compound_object'),
   );
   $messages = array(
-    'newspaper' => (!$req_modules['newspaper'] ? "Requires Islandora Newspaper Solution Pack.", ""),
-    'book' => (!$req_modules['book'] ? "Requires Islandora Book Solution Pack.", ""),
-    'compound' => (!$req_modules['compound'] ? "Requires Islandora Compuond Object Solution Pack.", ""),
+    'newspaper' => (!$req_modules['newspaper'] ? "Requires Islandora Newspaper Solution Pack." : ""),
+    'book' => (!$req_modules['book'] ? "Requires Islandora Book Solution Pack." : ""),
+    'compound' => (!$req_modules['compound'] ? "Requires Islandora Compuond Object Solution Pack." : ""),
   );
 
   $form = array(
