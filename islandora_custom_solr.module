@@ -43,11 +43,6 @@ function islandora_custom_solr_theme($existing, $type, $theme, $path) {
 
 /**
  * Implements hook_module_implements_alter().
- *
- * @param array $implementations
- *   array of hooks to process for the current page
- * @param string $hook
- *   the hook being processed
  */
 function islandora_custom_solr_module_implements_alter(&$implementations, $hook) {
   if (strtolower($hook) == 'islandora_newspapercmodel_islandora_view_object' &&  variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
@@ -69,12 +64,6 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
 
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
- *
- * @param AbstractObject $object
- *   the newspaper issue object to view
- *
- * @return array
- *   array of HTML to display
  */
 function islandora_custom_solr_islandora_newspapercmodel_islandora_view_object(AbstractObject $newspaper) {
   if (variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
@@ -85,12 +74,6 @@ function islandora_custom_solr_islandora_newspapercmodel_islandora_view_object(A
 
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
- *
- * @param AbstractObject $object
- *   the book object to view
- *
- * @return array
- *   array of HTML to display
  */
 function islandora_custom_solr_islandora_bookcmodel_islandora_view_object($object) {
   if (variable_get('islandora_custom_solr_replace_books', FALSE)) {
@@ -101,12 +84,6 @@ function islandora_custom_solr_islandora_bookcmodel_islandora_view_object($objec
 
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
- *
- * @param AbstractObject $object
- *   the compound object to view
- *
- * @return array
- *   array of HTML to display
  */
 function islandora_custom_solr_islandora_compoundCModel_islandora_view_object($object) {
   if (variable_get('islandora_custom_solr_replace_compound', FALSE)) {

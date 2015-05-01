@@ -23,7 +23,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $escaped_pid = str_replace(':', '_', $pid);
   $objects = array();
 
-  $parent_field = variable_get('islandora_custom_solr_compound_solr_relationship', 'RELS_EXT_isConstituentOf_uri_mt');  
+  $parent_field = variable_get('islandora_custom_solr_compound_solr_relationship', 'RELS_EXT_isConstituentOf_uri_mt');
   $solr_param = array(
     'rows' => 100000,
     'limit' => 100000,
@@ -34,9 +34,9 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $solr_query = "($parent_field:\"info:fedora/{$pid}\")";
   $solr_build->buildQuery($solr_query, $solr_param);
   $solr_build->solrParams = array_merge($solr_build->solrParams, $solr_param);
-  // If we remove compound children from search results, we need to remove that restriction here.
+  // we need to remove the solr child object restriction.
   if (isset($solr_build->solrParams['fq'])) {
-    foreach($solr_build->solrParams['fq'] as $idx => $val) {
+    foreach ($solr_build->solrParams['fq'] as $idx => $val) {
       if ($val == variable_get('islandora_compound_object_solr_fq', '-RELS_EXT_isConstituentOf_uri_mt:*')) {
         unset($solr_build->solrParams['fq'][$idx]);
         break;
@@ -68,7 +68,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
     return array(
       'pid' => $o["PID"],
       'title' => $o['fgs_label_s'],
-      'seq' => (array_key_exists($escaped_field, $o) ? (string)$o[$escaped_field][0] : NULL),
+      'seq' => (array_key_exists($escaped_field, $o) ? (string) $o[$escaped_field][0] : NULL),
     );
   };
 
