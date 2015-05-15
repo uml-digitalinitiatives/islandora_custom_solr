@@ -32,6 +32,10 @@ function islandora_custom_solr_theme($existing, $type, $theme, $path) {
       'variables' => array('object' => NULL),
       'file' => 'includes/newspaper.inc',
     ),
+    'islandora_custom_solr_newspaper_page_select' => array(
+      'file' => 'includes/newspaper.inc',
+      'variables' => array('object' => NULL),
+    ),
     'islandora_custom_solr_book_book' => array(
       'pattern' => 'islandora_book__',
       'template' => 'theme/islandora-custom-solr-book-book',

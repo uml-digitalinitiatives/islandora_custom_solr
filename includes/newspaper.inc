@@ -120,7 +120,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   );
   $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
   $solr_build->buildQuery($solr_query, $solr_param);
-  $solr_build->solrParams = array_merge($solr_build->solrParams, $solr_param);
+  $solr_build->solrParams = array_replace_recursive($solr_build->solrParams, $solr_param);
 
   $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
   $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');
@@ -173,4 +173,108 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   $pids = array_map($get_pid, $issues);
   // Make the PIDs the keys.
   return count($pids) ? array_combine($pids, $issues) : array();
+}
+
+function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
+  module_load_include('inc', 'islandora_solr_search', 'includes/query_processor');
+  $solr_build = new IslandoraSolrQueryProcessor();
+  
+  $parent_field = 'RELS_EXT_isMemberOf_uri_ms';
+  $solr_param = array(
+    'rows' => 30000,
+    'limit' => 30000,
+    'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'hl' => 'false',
+    'facet' => 'false',
+  );
+  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperPageCModel\")";
+  $solr_build->buildQuery($solr_query, $solr_param);
+  $solr_build->solrParams = array_replace_recursive($solr_build->solrParams, $solr_param);
+
+  $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
+  $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');
+  $solr->setCreateDocuments(0);
+
+  // Query is executed.
+  try {
+    $solr_query = ($solr_build->internalSolrQuery) ? $solr_build->internalSolrQuery : $solr_build->solrQuery;
+    $method = 'GET';
+    $results = $solr->search($solr_query, $solr_build->solrStart, $solr_build->solrLimit, $solr_build->solrParams, $method);
+  }
+  catch (Exception $e) {
+    drupal_set_message(check_plain(t('Error searching Solr index')) . ' ' . $e->getMessage(), 'error');
+  }
+
+  if (isset($results)) {
+    $solr_results = json_decode($results->getRawResponse(), TRUE);
+    $results = $solr_results['response']['docs'];
+  }
+  // Map the results using a default Datetime for missing issued dates.
+  $map_results = function($o) {
+    if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+    }
+    else {
+      $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
+    }
+    return array(
+      'pid' => $o['PID'],
+      'label' => $o['fgs_label_s'],
+      'page' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+    );
+  };
+  $pages = array_map($map_results, $results);
+
+  // Grab the PIDs...
+  $get_pid = function($o) {
+    return $o['pid'];
+  };
+  $pids = array_map($get_pid, $pages);
+
+  // If we have some pages, combine our remapped results to produce an array
+  // mapping pids to the values for that pid.
+  $pages = count($pids) ? array_combine($pids, $pages) : array();
+
+  // Sort the pages into their proper order.
+  $sort = function($a, $b) {
+    $a = (is_array($a) && isset($a['page'])) ? $a['page'] : 0;
+    $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
+    if ($a == $b) {
+      return 0;
+    }
+    return ($a < $b) ? -1 : 1;
+  };
+  uasort($pages, $sort);
+
+  return $pages;
+}
+
+/**
+ * Theme the page selector.
+ */
+function theme_islandora_custom_solr_newspaper_page_select(array $variables) {
+  $path = drupal_get_path('module', 'islandora_newspaper');
+  drupal_add_js($path . '/js/islandora_newspaper.js');
+  $object = $variables['object'];
+  $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
+  $result = reset($results);
+  $parent = $result ? islandora_object_load($result['object']['value']) : FALSE;
+  $pages = $parent ? islandora_custom_solr_newspaper_get_pages($parent) : FALSE;
+  if (!$pages) {
+    return;
+  }
+
+  $variables = array(
+    '#options' => array(),
+    '#attributes' => array('class' => array('page-select')),
+    '#value' => $object->id,
+  );
+  foreach ($pages as $pid => $page) {
+    $variables['#options'][$pid] = $page['page'];
+  }
+  $prefix = '<strong>' . t('Image') . ':</strong> ';
+  return $prefix . t('!page_selector of @total', array(
+    '!page_selector' => theme('select', array('element' => $variables)),
+    '@total' => count($pages),
+  ));
 }
