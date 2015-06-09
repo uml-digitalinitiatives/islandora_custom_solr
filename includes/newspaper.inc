@@ -121,6 +121,13 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
   $solr_build->buildQuery($solr_query, $solr_param);
   $solr_build->solrParams = array_replace_recursive($solr_build->solrParams, $solr_param);
+  if (isset($solr_build->solrParams['fq'])) {
+    for ($x=0; $x < count($solr_build->solrParams['fq']); $x+=1 ) { 
+      if (strpos('-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"', $solr_build->solrParams['fq'][$x]) !== FALSE) {
+        unset($solr_build->solrParams['fq'][$x]);
+      }
+    }
+  }
 
   $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
   $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');
