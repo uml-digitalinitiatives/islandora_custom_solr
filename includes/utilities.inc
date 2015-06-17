@@ -16,13 +16,13 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
     'facet' => 'false',
   );
 
-  $solr_params = array_merge_recursive($default_params, $solr_params);
+  $solr_params = array_replace_recursive($default_params, $solr_params);
   $solr_build->buildQuery($query, $solr_params);
   $solr_build->solrParams = array_merge_recursive($solr_build->solrParams, $solr_params);
   if (!$options['hl']) {
     $solr_build->solrParams['hl'] = 'false';
   }
-  if (!$solr_build->solrParams['facet']) {
+  if (!$options['facet']) {
     $solr_build->solrParams['facet'] = 'false';
   }
   if (isset($options['stripFQ'])) {
