@@ -116,7 +116,12 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
     'facet' => 'false',
   );
   $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
-  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE));
+  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
+    'facet' => FALSE,
+    'stripFQ' => array(
+      '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
+    ),
+  ));
 
   // Map the results using a default Datetime for missing issued dates.
   $map_results = function($o) {

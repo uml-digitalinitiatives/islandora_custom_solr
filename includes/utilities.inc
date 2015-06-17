@@ -25,6 +25,13 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
   if (!$solr_build->solrParams['facet']) {
     $solr_build->solrParams['facet'] = 'false';
   }
+  if (isset($options['stripFQ'])) {
+    for ($foo = 0; $foo < count($solr_build->solrParams['fq']); $foo += 1) {
+      if (in_array($solr_build->solrParams['fq'][$foo], $options['stripFQ'])) {
+        unset($solr_build->solrParams['fq'][$foo]);
+      }
+    }
+  }
 
   $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
   $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');
