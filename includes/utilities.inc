@@ -32,6 +32,8 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
       }
     }
   }
+#  dsm($solr_build->solrQuery, 'query');
+#  dsm($solr_build->solrParams, 'params');
 
   $path_parts = parse_url(variable_get('islandora_solr_url', 'localhost:8080/solr'));
   $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path'] . '/');

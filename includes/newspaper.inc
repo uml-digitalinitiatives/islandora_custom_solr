@@ -107,11 +107,12 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
  *     - issued: A DateTime object repersenting the date the issue was released.
  */
 function islandora_custom_solr_get_issues(AbstractObject $object) {
-  $parent_field = variable_get('islandora_newspaper_parent_issue_solr_field', 'RELS_EXT_isMemberOf_uri_ms');
+  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
   $solr_param = array(
     'rows' => 30000,
     'limit' => 30000,
-    'fl' => 'mods_originInfo_dateIssued_dt, fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
     'hl' => 'false',
     'facet' => 'false',
   );
@@ -124,9 +125,9 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   ));
 
   // Map the results using a default Datetime for missing issued dates.
-  $map_results = function($o) {
+  $map_results = function($o) use ($date_field) {
     try {
-      @$issued = new DateTime($o['mods_originInfo_dateIssued_dt']);
+      @$issued = new DateTime($o[$date_field]);
     }
     catch (Exception $e) {
       // Use the current time as a place holder.
@@ -159,7 +160,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
 }
 
 function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
-  $parent_fiels = 'RELS_EXT_isMemberOf_uri_ms';
+  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
   $solr_param = array(
     'rows' => 30000,
     'limit' => 30000,
@@ -307,6 +308,7 @@ function template_preprocess_islandora_custom_solr_newspaper_page_controls(array
  *   an array of the PID or FALSE
  */
 function islandora_custom_solr_get_newspaper($object) {
+  module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $parent_field = 'RELS_EXT_isMemberOf_uri_ms';
   $solr_param = array(
     'rows' => 20,
@@ -316,7 +318,8 @@ function islandora_custom_solr_get_newspaper($object) {
     'facet' => 'false',
     'fq' => array('RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperCModel"'),
   );
-  $solr_query = "{!join from=ancestors_ms to=PID}PID:{$object->id}";
+  $pid = islandora_solr_lesser_escape($object->id);
+  $solr_query = "{!join from=ancestors_ms to=PID}PID:{$pid}";
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE));
   return reset($results);
 }
@@ -326,7 +329,7 @@ function islandora_custom_solr_get_newspaper($object) {
  */
 function theme_islandora_custom_solr_newspaper_issue_navigator(array $variables) {
   $object = $variables['object'];
-  $newspaper = islandora_custom_solr_newspaper_get_newspaper($object);
+  $newspaper = islandora_custom_solr_get_newspaper($object);
   $newspaper = $newspaper ? islandora_object_load($newspaper['PID']) : FALSE;
   $issues = $newspaper ? islandora_custom_solr_get_issues($newspaper) : array();
   $issues = array_keys($issues);
@@ -418,5 +421,89 @@ function template_process_islandora_custom_solr_newspaper_issue(array &$variable
         }
       }
     }
+  }
+}
+
+/**
+ * Prepares variables for islandora_newspaper_page templates.
+ *
+ * Default template: islandora-newspaper-page.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - object: An AbstractObject for which to generate the display.
+ */
+function template_preprocess_islandora_custom_solr_newspaper_page(array &$variables) {
+  module_load_include('inc', 'islandora', 'includes/datastream');
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  module_load_include('inc', 'islandora', 'includes/solution_packs');
+  module_load_include('inc', 'islandora', 'includes/metadata');
+  $object = $variables['object'];
+
+  $params = array();
+  if (isset($object['JP2']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['JP2'])) {
+    // Get token to allow access to XACML protected datastreams if necessary.
+    // Always use token authentication in case there is a global policy.
+    module_load_include('inc', 'islandora', 'includes/authtokens');
+    $token = islandora_get_object_token($object->id, 'JP2', 2);
+    $jp2_url = url("islandora/object/{$object->id}/datastream/JP2/view",
+      array(
+        'absolute' => TRUE,
+        'query' => array('token' => $token),
+      ));
+
+    // Display newspaper.
+    $params['jp2_url'] = $jp2_url;
+  }
+  $variables['viewer_id'] = islandora_get_viewer_id('islandora_newspaper_page_viewers');
+  $variables['viewer_params'] = $params;
+
+  // @todo: Remove after 7.x-1.5 release.
+  $variables['content'] = new IslandoraNewspaperDeprecateString($variables, 'content', 'template_process_islandora_newspaper_page');
+
+  $variables['metadata'] = islandora_retrieve_metadata_markup($object);
+  $variables['description'] = islandora_retrieve_description_markup($object);
+}
+
+/**
+ * Process variables for islandora_newspaper_page templates.
+ *
+ * Default template: islandora-newspaper-page.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - object: An AbstractObject for which to generate the display.
+ *   - viewer_id: The "ID" of the viewer to use.
+ *   - viewer_params: An (associative) array of parameters to pass to the
+ *     viewer.
+ */
+function template_process_islandora_custom_solr_newspaper_page(array &$variables) {
+  // @todo: Remove condition with "IslandoraNewspaperDeprecateString" after
+  // 7.x-1.5 release.
+  $object = $variables['object'];
+  if ($variables['content'] instanceof IslandoraNewspaperDeprecateString) {
+    if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
+      $viewer_callback = islandora_get_viewer_callback($variables['viewer_id']);
+      if (function_exists($viewer_callback)) {
+        $viewer = $viewer_callback($variables['viewer_params'], $variables['object']);
+        if ($viewer) {
+          $variables['content'] = $viewer;
+        }
+      }
+    }
+    // Fallback to image.
+    elseif (isset($object['JPG']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['JPG'])) {
+      $params = array(
+        'title' => $object->label,
+        'path' => url("islandora/object/{$object->id}/datastream/JPG/view"),
+      );
+      $variables['content'] = theme('image', $params);
+    }
+    else {
+      $variables['content'] = NULL;
+    }
+  }
+  else {
+    $variables['content'] = NULL;
   }
 }

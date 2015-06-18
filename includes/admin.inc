@@ -30,49 +30,171 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
   );
 
   $form = array(
-    'islandora_custom_solr_replace_newspaper' => array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable newspaper replacements'),
-      '#disabled' => (!$req_modules['newspaper']),
-      '#description' => t('Replaces newspapers get_issues RI queries with Solr ones. @msg',
-        array('@msg' => $messages['newspaper'])),
-      '#default_value' => (!$req_modules['newspaper'] ? FALSE : variable_get('islandora_custom_solr_replace_newspaper', FALSE)),
-      '#return_value' => TRUE,
-    ),
-    'islandora_custom_solr_replace_books' => array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable book replacements'),
-      '#disabled' => (!$req_modules['book']),
-      '#description' => t('Replaces book get_pages RI queries with Solr ones. @msg',
-        array('@msg' => $messages['book'])),
-      '#default_value' => (!$req_modules['book'] ? FALSE : variable_get('islandora_custom_solr_replace_books', FALSE)),
-      '#return_value' => TRUE,
-    ),
-    'islandora_custom_solr_replace_compound' => array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable compound replacements'),
-      '#disabled' => (!$req_modules['compound']),
-      '#description' => t('Replaces compound get_parts RI queries with Solr ones. @msg',
-        array('@msg' => $messages['compound'])),
-      '#default_value' => (!$req_modules['compound'] ? FALSE : variable_get('islandora_custom_solr_replace_compound', FALSE)),
-      '#return_value' => TRUE,
-    ),
-    'islandora_custom_solr_compound_solr_relationship' => array(
-      '#type' => 'textfield',
-      '#title' => t('Compound Solr relationship field'),
-      '#default_value' => variable_get('islandora_custom_solr_compound_solr_relationship', 'RELS_EXT_isConstituentOf_uri_mt'),
-      '#element_validate' => array('islandora_custom_solr_validate_solr_relationship'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="islandora_custom_solr_replace_compound"]' => array('checked' => TRUE),
+    'newspaper_wrapper' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Newspapers'),
+      'replace_newspaper' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable newspaper replacements'),
+        '#disabled' => (!$req_modules['newspaper']),
+        '#description' => t('Replaces newspapers get_issues RI queries with Solr ones. @msg',
+          array('@msg' => $messages['newspaper'])),
+        '#default_value' => (!$req_modules['newspaper'] ? FALSE : variable_get('islandora_custom_solr_replace_newspaper', FALSE)),
+        '#return_value' => TRUE,
+      ),
+      'newspapers_options' => array(
+        '#type' => 'container',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="replace_newspaper"]' => array('checked' => TRUE),
+          ),
         ),
-        'required' => array(
-          ':input[name="islandora_custom_solr_replace_compound"]' => array('checked' => TRUE),
+        'newspaper_date_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Issued date field'),
+          '#description' => t('Solr field that contains the date issued of the newspaper.'),
+          '#size' => 100,
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_issued_date', ''),
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_newspaper"]' => array('checked' => TRUE),
+            ),
+          )
+        ),
+        'newspaper_relation_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Newspaper relationship field'),
+          '#description' => t('Solr field that contains the newspaper relationships.'),
+          '#size' => 100,
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_relationship', ''),
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_newspaper"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
       ),
     ),
+    'books_wrapper' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Books'),
+      'replace_books' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable book replacements'),
+        '#disabled' => (!$req_modules['book']),
+        '#description' => t('Replaces book get_pages RI queries with Solr ones. @msg',
+          array('@msg' => $messages['book'])),
+        '#default_value' => (!$req_modules['book'] ? FALSE : variable_get('islandora_custom_solr_replace_books', FALSE)),
+        '#return_value' => TRUE,
+      ),
+      'books_options' => array(
+        '#type' => 'container',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="replace_books"]' => array('checked' => TRUE),
+          ),
+        ),
+        'book_relation_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Book relationship field'),
+          '#description' => t('Solr field that contains the relationship of pages to book.'),
+          '#size' => 100,
+          '#default_value' => variable_get('islandora_custom_solr_book_relationship', 'RELS_EXT_isMemberOf_uri_ms'),
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_book"]' => array('checked' => TRUE),
+            ),
+          )
+        ),
+      ),
+    ),
+    'compound_wrapper' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Compound Objects'),
+      'replace_compound' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable compound replacements'),
+        '#disabled' => (!$req_modules['compound']),
+        '#description' => t('Replaces compound get_parts RI queries with Solr ones. @msg',
+          array('@msg' => $messages['compound'])),
+        '#default_value' => (!$req_modules['compound'] ? FALSE : variable_get('islandora_custom_solr_replace_compound', FALSE)),
+        '#return_value' => TRUE,
+      ),
+      'compound_options' => array(
+        '#type' => 'container',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="replace_compound"]' => array('checked' => TRUE),
+          ),
+        ),
+        'compound_relation_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Compound relationship field'),
+          '#description' => t('Solr field that contains the relationship of compound children to parent.'),
+          '#size' => 100,
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#default_value' => variable_get('islandora_custom_solr_compound_relationship', 'RELS_EXT_isConstituentOf_uri_mt'),
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_compound"]' => array('checked' => TRUE),
+            ),
+          ),
+        ),
+      ),
+    ),
+    'submit_action' => array(
+      '#type' => 'submit',
+      '#value' => t('Save configuration'),
+    ),
   );
-  return system_settings_form($form);
+  return $form;
+}
+
+/**
+ * Implements hook_FORM_ID_validate().
+ */
+function islandora_custom_solr_admin_settings_form_validate(array $form, array &$form_state) {
+  $error = array();
+  // Newspaper fields.
+  if ($form_state['values']['replace_newspaper'] == 1) {
+    if (empty($form_state['values']['newspaper_date_field'])) {
+      $error['newspaper_date_field'] = t('Issued date field cannot be blank');
+    }
+    if (empty($form_state['values']['newspaper_relation_field'])) {
+      $error['newspaper_relation_field'] = t('Newspaper relationship field cannot be blank');
+    }
+  }
+  // Book fields.
+  if ($form_state['values']['replace_books'] && empty($form_state['values']['book_relation_field'])) {
+    $error['book_relation_field'] = t('Book relationship field is required.');
+  }
+  // Compound fields.
+  if ($form_state['values']['replace_compound'] == 1 && empty($form_state['values']['compound_relation_field'])) {
+    $error['compound_relation_field'] = t('Compound relationship field is required.');
+  }
+
+  if (count($error) > 0) {
+    foreach ($error as $field => $message) {
+      form_set_error($field, $message);
+    }
+  }
+}
+
+/**
+ * Implements hook_FORM_ID_submit().
+ */
+function islandora_custom_solr_admin_settings_form_submit(array $form, array &$form_state) {
+  variable_set('islandora_custom_solr_replace_newspaper', $form_state['values']['replace_newspaper']);
+  variable_set('islandora_custom_solr_replace_books', $form_state['values']['replace_books']);
+  variable_set('islandora_custom_solr_replace_compound', $form_state['values']['replace_compound']);
+  variable_set('islandora_custom_solr_compound_relationship', $form_state['values']['compound_relation_field']);
+  variable_set('islandora_custom_solr_newspaper_relationship', $form_state['values']['newspaper_relation_field']);
+  variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
+  variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
+  drupal_set_message('Configuration saved.');
 }
 
 /**
