@@ -370,6 +370,15 @@ function theme_islandora_custom_solr_newspaper_issue_navigator(array $variables)
   return theme('links', array('links' => $links, 'attributes' => $attributes));
 }
 
+/**
+ * Prepares variables for islandora_newspaper_page templates.
+ *
+ * Default template: islandora-newspaper-page.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - object: An AbstractObject for which to generate the display.
+ */
 function template_preprocess_islandora_custom_solr_newspaper_issue(array &$variables) {
   module_load_include('inc', 'islandora_paged_content', 'includes/utilities');
   module_load_include('inc', 'islandora', 'includes/solution_packs');
@@ -392,6 +401,7 @@ function template_preprocess_islandora_custom_solr_newspaper_issue(array &$varia
   $variables['description'] = islandora_retrieve_description_markup($object);
 
   // @todo: Remove after 7.x-1.5 release.
+  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
   $variables['viewer'] = new IslandoraNewspaperDeprecateString($variables, 'viewer', 'template_process_islandora_custom_solr_newspaper_issue');
 }
 
@@ -410,6 +420,7 @@ function template_preprocess_islandora_custom_solr_newspaper_issue(array &$varia
 function template_process_islandora_custom_solr_newspaper_issue(array &$variables) {
   // @todo: Remove condition with "IslandoraNewspaperDeprecateString" after
   // 7.x-1.5 release.
+  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
   if ($variables['viewer'] instanceof IslandoraNewspaperDeprecateString) {
     $variables['viewer'] = NULL;
     if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
@@ -459,6 +470,7 @@ function template_preprocess_islandora_custom_solr_newspaper_page(array &$variab
   $variables['viewer_params'] = $params;
 
   // @todo: Remove after 7.x-1.5 release.
+  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
   $variables['content'] = new IslandoraNewspaperDeprecateString($variables, 'content', 'template_process_islandora_newspaper_page');
 
   $variables['metadata'] = islandora_retrieve_metadata_markup($object);
@@ -480,6 +492,7 @@ function template_preprocess_islandora_custom_solr_newspaper_page(array &$variab
 function template_process_islandora_custom_solr_newspaper_page(array &$variables) {
   // @todo: Remove condition with "IslandoraNewspaperDeprecateString" after
   // 7.x-1.5 release.
+  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
   $object = $variables['object'];
   if ($variables['content'] instanceof IslandoraNewspaperDeprecateString) {
     if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
