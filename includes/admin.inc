@@ -187,9 +187,9 @@ function islandora_custom_solr_admin_settings_form_validate(array $form, array &
  * Implements hook_FORM_ID_submit().
  */
 function islandora_custom_solr_admin_settings_form_submit(array $form, array &$form_state) {
-  variable_set('islandora_custom_solr_replace_newspaper', $form_state['values']['replace_newspaper']);
-  variable_set('islandora_custom_solr_replace_books', $form_state['values']['replace_books']);
-  variable_set('islandora_custom_solr_replace_compound', $form_state['values']['replace_compound']);
+  variable_set('islandora_custom_solr_replace_newspaper', ($form_state['values']['replace_newspaper'] == 1));
+  variable_set('islandora_custom_solr_replace_books', ($form_state['values']['replace_books'] == 1));
+  variable_set('islandora_custom_solr_replace_compound', ($form_state['values']['replace_compound'] == 1));
   variable_set('islandora_custom_solr_compound_relationship', $form_state['values']['compound_relation_field']);
   variable_set('islandora_custom_solr_newspaper_relationship', $form_state['values']['newspaper_relation_field']);
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);

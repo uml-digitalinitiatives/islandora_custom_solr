@@ -2,7 +2,7 @@
 
 /**
  * @file
- * islandora-newspaper-page.tpl.php
+ * islandora-custom-solr-newspaper-page.tpl.php
  * This is the template file for the object page for newspaper
  *
  * Available variables:
@@ -13,12 +13,12 @@
  * - $description: Rendered metadata descripton for the object.
  * - $metadata: Rendered metadata display for the binary object.
  *
- * @see template_preprocess_islandora_newspaper_page()
+ * @see template_preprocess_islandora_custom_solr_newspaper_page()
  * @see theme_islandora_newspaper_page()
  *
  */
 ?>
-<div class="islandora-newspaper-object">
+<div class="islandora-newspaper-object islandora-custom-solr">
   <div class="islandora-newspaper-controls">
     <?php print theme('islandora_custom_solr_newspaper_page_controls', array('object' => $object)); ?>
   </div>

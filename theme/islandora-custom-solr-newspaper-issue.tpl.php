@@ -4,7 +4,7 @@
  * @file
  */
 ?>
-<div class="islandora-newspaper-issue clearfix">
+<div class="islandora-newspaper-issue clearfix islandora-custom-solr">
   <span class="islandora-newspaper-issue-navigator">
     <?php print theme('islandora_custom_solr_newspaper_issue_navigator', array('object' => $object)); ?>
   </span>
