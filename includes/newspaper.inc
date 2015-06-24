@@ -254,7 +254,7 @@ function template_preprocess_islandora_custom_solr_newspaper_page_controls(array
   $issue = $issue ? islandora_object_load($issue['PID']) : FALSE;
   $controls = array(
     'page_select' => theme('islandora_custom_solr_newspaper_page_select', array('object' => $object)),
-    'page_pager' => theme('islandora_paged_content_page_navigator', array('object' => $object)),
+    'page_pager' => theme('islandora_custom_solr_newspaper_page_navigator', array('object' => $object)),
     'issue_pager' => ($issue ?
       theme('islandora_custom_solr_newspaper_issue_navigator', array('object' => $issue)) :
       ''),
@@ -519,4 +519,54 @@ function template_process_islandora_custom_solr_newspaper_page(array &$variables
   else {
     $variables['content'] = NULL;
   }
+}
+
+/**
+ * Theme the page navigator.
+ */
+function theme_islandora_custom_solr_newspaper_page_navigator(array $variables) {
+  $object = $variables['object'];
+  $results = $object->relationships->get(ISLANDORA_RELS_EXT_URI, 'isPageOf');
+  $result = reset($results);
+  $parent = $result ? islandora_object_load($result['object']['value']) : FALSE;
+  $pages = $parent ? islandora_custom_solr_newspaper_get_pages($parent) : array();
+  $pages = array_keys($pages);
+  if (empty($pages)) {
+    $pages[] = $object->id;
+  }
+  $index = array_search($object->id, $pages);
+  $previous_page = isset($pages[$index - 1]) ? $pages[$index - 1] : NULL;
+  $next_page = isset($pages[$index + 1]) ? $pages[$index + 1] : NULL;
+  $links = array();
+  if ($previous_page) {
+    $links[] = array(
+      'title' => t('Prev'),
+      'href' => url("islandora/object/{$previous_page}", array('absolute' => TRUE)),
+    );
+  }
+  $links[] = array(
+    'title' => '<strong>' . t('Page') . '</strong>',
+    'html' => TRUE,
+  );
+  if ($next_page) {
+    $links[] = array(
+      'title' => t('Next'),
+      'href' => url("islandora/object/{$next_page}", array('absolute' => TRUE)),
+    );
+  }
+  if ($parent) {
+    $links[] = array(
+      'title' => t('All Pages'),
+      'href' => url("islandora/object/{$parent->id}", array('absolute' => TRUE)),
+    );
+  }
+  return theme('links', array(
+    'links' => $links,
+    'attributes' => array(
+      'class' => array(
+        'links',
+        'inline',
+      ),
+    ),
+  ));
 }
