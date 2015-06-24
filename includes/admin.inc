@@ -37,7 +37,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
         '#type' => 'checkbox',
         '#title' => t('Enable newspaper replacements'),
         '#disabled' => (!$req_modules['newspaper']),
-        '#description' => t('Replaces newspapers get_issues RI queries with Solr ones. @msg',
+        '#description' => t('Replaces newspapers resource index queries with Solr ones. @msg',
           array('@msg' => $messages['newspaper'])),
         '#default_value' => (!$req_modules['newspaper'] ? FALSE : variable_get('islandora_custom_solr_replace_newspaper', FALSE)),
         '#return_value' => TRUE,
@@ -84,7 +84,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
         '#type' => 'checkbox',
         '#title' => t('Enable book replacements'),
         '#disabled' => (!$req_modules['book']),
-        '#description' => t('Replaces book get_pages RI queries with Solr ones. @msg',
+        '#description' => t('Replaces book resource index queries with Solr ones. @msg',
           array('@msg' => $messages['book'])),
         '#default_value' => (!$req_modules['book'] ? FALSE : variable_get('islandora_custom_solr_replace_books', FALSE)),
         '#return_value' => TRUE,
@@ -118,7 +118,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
         '#type' => 'checkbox',
         '#title' => t('Enable compound replacements'),
         '#disabled' => (!$req_modules['compound']),
-        '#description' => t('Replaces compound get_parts RI queries with Solr ones. @msg',
+        '#description' => t('Replaces compound resource index queries with Solr ones. @msg',
           array('@msg' => $messages['compound'])),
         '#default_value' => (!$req_modules['compound'] ? FALSE : variable_get('islandora_custom_solr_replace_compound', FALSE)),
         '#return_value' => TRUE,
@@ -144,6 +144,11 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
           ),
         ),
       ),
+    ),
+    'advisory_message' => array(
+      '#markup' => t('Note: Saving will clear all drupal caches to ensure all hooks are updated.'),
+      '#prefix' => '<p>',
+      '#suffix' => '</p>',
     ),
     'submit_action' => array(
       '#type' => 'submit',
@@ -194,6 +199,7 @@ function islandora_custom_solr_admin_settings_form_submit(array $form, array &$f
   variable_set('islandora_custom_solr_newspaper_relationship', $form_state['values']['newspaper_relation_field']);
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
   variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
+  drupal_flush_all_caches();
   drupal_set_message('Configuration saved.');
 }
 

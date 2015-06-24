@@ -1,27 +1,11 @@
-CONTENTS OF THIS FILE
----------------------
+# Islandora Custom Solr
 
- * summary
- * requirements
- * installation
- * configuration
- * customization
- * troubleshooting
- * faq
- * contact
- * sponsors
-
-
-SUMMARY
--------
-
-Islandora Custom Solr
-
+### SUMMARY
+***
 Replace Sparql queries with Solr queries where possible for speed improvements.
 
-REQUIREMENTS
-------------
-
+### REQUIREMENTS
+***
 Dependent on:
 * islandora
 * islandora\_solr
@@ -34,32 +18,20 @@ Affects:
 * islandora\_compound\_object (for compound improvements)
 
 
-INSTALLATION
-------------
+### INSTALLATION
+***
 
 Install as any other Drupal module.
 
-CONFIGURATION
--------------
+### CONFIGURATION
+***
 
 Enable/Disable the improvements you wish (assuming you have the modules installed) at /admin/islandora/tools/custom_solr
 
-CUSTOMIZATION
--------------
+Configure the correct Solr fields to use.
 
+**Note**: This module disrupts the normal processing of content models from islandora\_newspaper, islandora\_book and islandora\_compound solution packs.
 
-TROUBLESHOOTING
----------------
+This means any theme templates or theme preprocess functions may need to be updated.
 
-
-F.A.Q.
-------
-
-
-CONTACT
--------
-
-
-SPONSORS
---------
-
+Please test before placing into production.
