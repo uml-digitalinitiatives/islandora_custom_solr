@@ -68,7 +68,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
     return array(
       'pid' => $o["PID"],
       'title' => $o['fgs_label_s'],
-      'seq' => (array_key_exists($escaped_field, $o) ? (string) $o[$escaped_field][0] : NULL),
+      'seq' => (array_key_exists($escaped_field, $o) ? (string) $o[$escaped_field][0] : 0),
     );
   };
 
