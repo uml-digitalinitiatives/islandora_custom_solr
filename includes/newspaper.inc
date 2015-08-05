@@ -163,7 +163,6 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
   $solr_param = array(
     'rows' => 30000,
-    'limit' => 30000,
     'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
     'hl' => 'false',
     'facet' => 'false',
