@@ -146,7 +146,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
       ),
     ),
     'advisory_message' => array(
-      '#markup' => t('Note: Saving will clear all drupal caches to ensure all hooks are updated.'),
+      '#markup' => t('Note: Saving will clear all drupal caches.'),
       '#prefix' => '<p>',
       '#suffix' => '</p>',
     ),
