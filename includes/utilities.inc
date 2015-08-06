@@ -10,6 +10,7 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
 
   $default_params = array(
     'rows' => 30000,
+    'limit' => 30000,
     'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
     'hl' => 'false',
     'facet' => 'false',
@@ -18,11 +19,15 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
   $solr_params = array_replace_recursive($default_params, $solr_params);
   $solr_build->buildQuery($query, $solr_params);
   $solr_build->solrParams = array_merge_recursive($solr_build->solrParams, $solr_params);
-  if (!$options['hl']) {
+  if (isset($options['hl']) && !$options['hl']) {
     $solr_build->solrParams['hl'] = 'false';
   }
-  if (!$options['facet']) {
+  if (isset($options['facet']) && !$options['facet']) {
     $solr_build->solrParams['facet'] = 'false';
+  }
+  if (isset($options['object_paging']) && $options['object_paging']) {
+    // Object paging requires we return all results, so we start at 0.
+    $solr_build->solrStart = 0;
   }
   if (isset($options['stripFQ'])) {
     for ($foo = 0; $foo < count($solr_build->solrParams['fq']); $foo += 1) {
