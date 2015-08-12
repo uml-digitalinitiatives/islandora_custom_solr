@@ -88,6 +88,13 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
             ),
           ),
         ),
+        'newspaper_ajax_issues' => array(
+          '#type' => 'checkbox',
+          '#title' => t('Load newspaper issues via AJAX.'),
+          '#description' => t('Load only one year on page load and the rest via AJAX when the year is clicked.'),
+          '#return_value' => TRUE,
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_ajax', FALSE),
+        ),
       ),
     ),
     'books_wrapper' => array(
@@ -216,6 +223,7 @@ function islandora_custom_solr_admin_settings_form_submit(array $form, array &$f
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
   variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
   variable_set('islandora_custom_solr_newspaper_sequence', $form_state['values']['newspaper_sequence_field']);
+  variable_set('islandora_custom_solr_newspaper_ajax', ($form_state['values']['newspaper_ajax_issues'] == 1));
   drupal_flush_all_caches();
   drupal_set_message('Configuration saved.');
 }

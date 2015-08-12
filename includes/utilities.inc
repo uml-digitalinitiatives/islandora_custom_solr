@@ -24,7 +24,8 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
 
   $solr_params = array_replace_recursive($default_params, $solr_params);
   $solr_build->buildQuery($query, $solr_params);
-  $solr_build->solrParams = array_merge_recursive($solr_build->solrParams, $solr_params);
+  //$solr_build->solrParams = array_merge_recursive($solr_build->solrParams, $solr_params);
+  $solr_build->solrParams = islandora_custom_solr_array_replace_recursive($solr_build->solrParams, $solr_params);
   if (isset($options['hl']) && !$options['hl']) {
     $solr_build->solrParams['hl'] = 'false';
   }
@@ -60,6 +61,40 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
   if (isset($results)) {
     $solr_results = json_decode($results->getRawResponse(), TRUE);
     $results = $solr_results['response']['docs'];
+    if (isset($options['raw_results']) && $options['raw_results']) {
+      $results = $solr_results;
+    }
   }
   return $results;
+}
+
+function islandora_custom_solr_recurse($array, $array1) {
+  foreach ($array1 as $key => $value) {
+    // create new key in $array, if it is empty or not an array
+    if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key]))) {
+      $array[$key] = array();
+    }
+
+    // overwrite the value in the base array
+    if (is_array($value)) {
+      $value = islandora_custom_solr_recurse($array[$key], $value);
+    }
+    $array[$key] = $value;
+  }
+  return $array;
+}
+
+function islandora_custom_solr_array_replace_recursive($array, $array1) {
+  // handle the arguments, merge one by one
+  $args = func_get_args();
+  $array = $args[0];
+  if (!is_array($array)) {
+    return $array;
+  }
+  for ($i = 1; $i < count($args); $i++) {
+    if (is_array($args[$i])) {
+      $array = islandora_custom_solr_recurse($array, $args[$i]);
+    }
+  }
+  return $array;
 }

@@ -9,10 +9,21 @@
  * Generates the Solr list of newspaper issues.
  */
 function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
+  global $base_url;
   module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
   drupal_add_js('misc/collapse.js');
   $object = $variables['object'];
-  $issues = islandora_custom_solr_get_issues($object);
+  if (variable_get('islandora_custom_solr_newspaper_ajax', FALSE)) {
+    $years = islandora_custom_solr_newspaper_get_years($object);
+    $first_year = reset($years);
+    $issues = islandora_custom_solr_get_issues($object, $first_year);
+    drupal_add_library('system', 'drupal.ajax');
+    drupal_add_js(drupal_get_path('module', 'islandora_custom_solr') . '/js/newspaper_tabs.js', 'file');
+    drupal_add_js(array('islandora_custom_solr' => array('newspaper_issue_pid' => $object->id, 'base_url' => $base_url, 'first_year' => $first_year)), 'setting');
+  }
+  else {
+    $issues = islandora_custom_solr_get_issues($object);
+  }
   $grouped_issues = islandora_newspaper_group_issues($issues);
   $output = array(
     'controls' => array(
@@ -43,25 +54,22 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
     ),
     'tabs' => array(
       '#type' => 'vertical_tabs',
+      '#prefix' => '<div id="islandora_custom_solr_ajax_nav">',
+      '#suffix' => '</div>',
     ),
   );
   $tabs = &$output['tabs'];
-  foreach ($grouped_issues as $year => $months) {
-    $tabs[$year] = array(
-      '#title' => $year,
-      '#type' => 'fieldset',
-    );
-    foreach ($months as $month => $days) {
-      $month_name = t("@date", array(
-        "@date" => date("F", mktime(0, 0, 0, $month, 1, 2000)),
-      ));
-      $tabs[$year][$month] = array(
-        '#title' => $month_name,
+  if (variable_get('islandora_custom_solr_newspaper_ajax', FALSE)) {
+    foreach ($years as $year) {
+      $tabs[$year] = array(
+        '#title' => $year,
         '#type' => 'fieldset',
         '#attributes' => array(
-          'class' => array('collapsible', 'collapsed', 'month'),
+          'class' => array('vertical-tab-years'),
+          'id' => 'fieldset-content-' . $year,
         ),
       );
+<<<<<<< HEAD
       foreach ($days as $day => $issues) {
         foreach ($issues as $issue) {
           $tabs[$year][$month][$day][] = array(
@@ -77,16 +85,179 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
             '#options' => array(
               'attributes' => array(),
               'html' => FALSE,
+=======
+      if ($first_year == $year) {
+        foreach ($grouped_issues[$year] as $month => $days) {
+          $month_name = t("@date", array(
+            "@date" => date("F", mktime(0, 0, 0, $month, 1, 2000)),
+          ));
+          $tabs[$year][$month] = array(
+            '#title' => $month_name,
+            '#type' => 'fieldset',
+            '#attributes' => array(
+              'class' => array('collapsible', 'collapsed', 'month'),
+>>>>>>> Display one year at a time and load the others via AJAX
             ),
           );
+          foreach ($days as $day => $issues) {
+            foreach ($issues as $issue) {
+              $tabs[$year][$month][$day][] = array(
+                '#theme' => 'link',
+                '#prefix' => '<div>',
+                '#suffix' => '</div>',
+                '#text' => t("@month @day, @year", array(
+                    '@year' => $year,
+                    '@month' => $month_name,
+                    '@day' => $day,
+                    )),
+                '#path' => "islandora/object/{$issue['pid']}",
+                '#options' => array(
+                  'attributes' => array(),
+                  'html' => FALSE,
+                ),
+              );
+            }
+          }
+          ksort($tabs[$year][$month]);
         }
       }
-      ksort($tabs[$year][$month]);
+      ksort($tabs[$year]);
     }
-    ksort($tabs[$year]);
   }
-  ksort($tabs);
+  // else load all issues at once.
+  else {
+    foreach ($grouped_issues as $year => $months) {
+      $tabs[$year] = array(
+        '#title' => $year,
+        '#type' => 'fieldset',
+        '#attributes' => array(
+          'class' => array('vertical-tab-years'),
+        ),
+      );
+      foreach ($months as $month => $days) {
+        $month_name = t("@date", array(
+          "@date" => date("F", mktime(0, 0, 0, $month, 1, 2000)),
+        ));
+        $tabs[$year][$month] = array(
+          '#title' => $month_name,
+          '#type' => 'fieldset',
+          '#attributes' => array(
+            'class' => array('collapsible', 'collapsed', 'month'),
+          ),
+        );
+        foreach ($days as $day => $issues) {
+          foreach ($issues as $issue) {
+            $tabs[$year][$month][$day][] = array(
+              '#theme' => 'link',
+              '#prefix' => '<div>',
+              '#suffix' => '</div>',
+              '#text' => t("@month @day, @year", array(
+                  '@year' => $year,
+                  '@month' => $month_name,
+                  '@day' => $day,
+                  )),
+              '#path' => "islandora/object/{$issue['pid']}",
+              '#options' => array(
+                'attributes' => array(),
+                'html' => FALSE,
+              ),
+            );
+          }
+        }
+        ksort($tabs[$year][$month]);
+      }
+      ksort($tabs[$year]);
+    }
+    ksort($tabs);
+  }
   return drupal_render($output);
+}
+
+function __islandora_custom_solr_islandora_newspaper_ajax($object, $display_year) {
+  module_load_include('inc', 'islandora_newspaper', 'includes/utilities');
+  $issues = islandora_custom_solr_get_issues($object, $display_year);
+  $grouped_issues = islandora_newspaper_group_issues($issues);
+  $output = array();
+  foreach ($grouped_issues[$display_year] as $month => $days) {
+    $month_name = t("@date", array(
+      "@date" => date("F", mktime(0, 0, 0, $month, 1, 2000)),
+    ));
+    $output[$month] = array(
+      '#title' => $month_name,
+      '#type' => 'fieldset',
+      '#attributes' => array(
+        'class' => array('collapsible', 'collapsed', 'month'),
+      ),
+    );
+    foreach ($days as $day => $issues) {
+      foreach ($issues as $issue) {
+        $output[$month][$day][] = array(
+          '#theme' => 'link',
+          '#prefix' => '<div>',
+          '#suffix' => '</div>',
+          '#text' => t("@month @day, @year", array(
+              '@year' => $year,
+              '@month' => $month_name,
+              '@day' => $day,
+              )),
+          '#path' => "islandora/object/{$issue['pid']}",
+          '#options' => array(
+            'attributes' => array(),
+            'html' => FALSE,
+          ),
+        );
+      }
+    }
+    ksort($output[$month]);
+  }
+
+  $data = drupal_render($output);
+  $output = array(
+    '#type' => 'ajax',
+    '#commands' => array(
+      ajax_command_html("#fieldset-content-$display_year", $data),
+    ),
+  );
+  return $output;
+}
+
+/**
+ * Return array of years for a newspaper.
+ *
+ * @param AbstractFedoraObject $object
+ *   The newspaper object to get the years available.
+ *
+ * @return array
+ *   Sorted array of year values only.
+ */
+function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object) {
+  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+  $solr_param = array(
+    'rows' => 0,
+    'limit' => 0,
+    'fl' => $date_field,
+    'hl' => 'false',
+    'facet' => 'true',
+    'facet.field' => $date_field,
+    'f.' . $date_field . '.facet.mincount' => 1,
+    'f.' . $date_field . '.facet.range.gap' => '%2B1YEAR',
+  );
+  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
+  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
+    'raw_results' => TRUE,
+    'stripFQ' => array(
+      '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
+    ),
+  ));
+  $map = function(&$val) {
+    $dt = new DateTime($val);
+    $val = $dt->format('Y');
+  };
+  $years = array_keys($results['facet_counts']['facet_fields'][$date_field]);
+  array_walk($years, $map);
+  sort($years);
+  return $years;
 }
 
 /**
@@ -99,6 +270,9 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
  * @param AbstractObject $object
  *   An AbstractObject representing a Fedora object.
  *
+ * @param string $year
+ *   The 4 digit year to limit results to.
+ *
  * @return array
  *   An associative array in the form of:
  *   - pid: The unique persistent identifier for the issue.
@@ -107,7 +281,30 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
  *     - sequence: The sequence number of the issue, starts at 1.
  *     - issued: A DateTime object repersenting the date the issue was released.
  */
-function islandora_custom_solr_get_issues(AbstractObject $object) {
+function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) {
+  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+  $solr_param = array(
+    'rows' => 30000,
+    'limit' => 30000,
+    'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'hl' => 'false',
+    'facet' => 'false',
+  );
+  if (!is_null($year) && preg_match('/^\d{4}$/', $year)) {
+    $solr_param['fq'] = array("$date_field:[ $year-01-01T00:00:00Z TO $year-12-31T23:59:59Z ]");
+  }
+  else {
+    // In case $year is just an invalid string.
+    $year = NULL;
+  }
+  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
+  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
+    'facet' => FALSE,
+    'stripFQ' => array(
+      '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
+    ),
+  ));
 
   if (user_is_anonymous()) {
     $cache_roles = 'anonymous';

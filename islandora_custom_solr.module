@@ -21,6 +21,23 @@ function islandora_custom_solr_menu() {
     'file' => 'includes/admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
+  $items['islandora_custom_solr/%islandora_object/newspaper_year/%/ajax'] = array(
+    'page callback' => '__islandora_custom_solr_islandora_newspaper_ajax',
+    'page arguments' => array(1, 3),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'islandora_object_access_callback',
+    'access arguments' => array(ISLANDORA_VIEW_OBJECTS, 1),
+    'delivery callback' => 'ajax_deliver',
+    'file' => 'includes/newspaper.inc',
+  );
+  $items['islandora_custom_solr/%islandora_object/newspaper_year/%/nojs'] = array(
+    'page callback' => '__islandora_custom_solr_islandora_newspaper_nojs',
+    'page arguments' => array(1, 3),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'islandora_object_access_callback',
+    'access arguments' => array(ISLANDORA_VIEW_OBJECTS, 1),
+    'file' => 'includes/newspaper.inc',
+  );
   return $items;
 }
 
