@@ -111,8 +111,8 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
   $page_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
   $solr_param = array(
-    'rows' => 30000,
-    'limit' => 30000,
+    'rows' => 300000,
+    'limit' => 300000,
     'fl' => $date_field . ', fgs_label_s, PID, ' . $page_field,
     'hl' => 'false',
     'facet' => 'false',
