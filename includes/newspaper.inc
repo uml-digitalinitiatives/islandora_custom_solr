@@ -109,10 +109,11 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
 function islandora_custom_solr_get_issues(AbstractObject $object) {
   $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
   $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+  $page_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
   $solr_param = array(
     'rows' => 30000,
     'limit' => 30000,
-    'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'fl' => $date_field . ', fgs_label_s, PID, ' . $page_field,
     'hl' => 'false',
     'facet' => 'false',
   );
@@ -125,7 +126,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   ));
 
   // Map the results using a default Datetime for missing issued dates.
-  $map_results = function($o) use ($date_field) {
+  $map_results = function($o) use ($date_field, $page_field) {
     try {
       @$issued = new DateTime($o[$date_field]);
     }
@@ -136,16 +137,16 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
       $vars = array('@pid' => $o['PID']);
       watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
     }
-    if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
-      $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+    if (array_key_exists($page_field, $o) && is_array($o[$page_field]) && isset($o[$page_field][0])) {
+      $o[$page_field] = $o[$page_field][0];
     }
     else {
-      $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
+      $o[$page_field] = 0;
     }
     return array(
       'pid' => $o['PID'],
       'label' => $o['fgs_label_s'],
-      'sequence' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+      'sequence' => $o[$page_field],
       'issued' => $issued,
     );
   };
@@ -161,26 +162,27 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
 
 function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+  $page_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
   $solr_param = array(
     'rows' => 30000,
-    'fl' => 'fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'fl' => "fgs_label_s, PID, $page_field",
     'hl' => 'false',
     'facet' => 'false',
   );
   $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperPageCModel\")";
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE, 'object_paging' => TRUE));
   // Map the results using a default Datetime for missing issued dates.
-  $map_results = function($o) {
-    if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
-      $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+  $map_results = function($o) use ($page_field){
+    if (array_key_exists($page_field, $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o[$page_field][0])) {
+      $o[$page_field] = $o[$page_field][0];
     }
     else {
-      $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
+      $o[$page_field] = 0;
     }
     return array(
       'pid' => $o['PID'],
       'label' => $o['fgs_label_s'],
-      'page' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+      'page' => $o[$page_field],
     );
   };
   $pages = array_map($map_results, $results);

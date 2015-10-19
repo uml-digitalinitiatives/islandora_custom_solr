@@ -60,7 +60,20 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
             'required' => array(
               ':input[name="replace_newspaper"]' => array('checked' => TRUE),
             ),
-          )
+          ),
+        ),
+        'newspaper_sequence_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Sequence field'),
+          '#description' => t('Field to use when sorting pages'),
+          '#size' => 100,
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms'),
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_newspaper"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
         'newspaper_relation_field' => array(
           '#type' => 'textfield',
@@ -171,6 +184,9 @@ function islandora_custom_solr_admin_settings_form_validate(array $form, array &
     if (empty($form_state['values']['newspaper_relation_field'])) {
       $error['newspaper_relation_field'] = t('Newspaper relationship field cannot be blank');
     }
+    if (empty($form_state['values']['newspaper_sequence_field'])) {
+      $error['newspaper_sequence_field'] = t('Newspaper sequence field cannot be blank');
+    }
   }
   // Book fields.
   if ($form_state['values']['replace_books'] && empty($form_state['values']['book_relation_field'])) {
@@ -199,6 +215,7 @@ function islandora_custom_solr_admin_settings_form_submit(array $form, array &$f
   variable_set('islandora_custom_solr_newspaper_relationship', $form_state['values']['newspaper_relation_field']);
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
   variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
+  variable_set('islandora_custom_solr_newspaper_sequence', $form_state['values']['newspaper_sequence_field']);
   drupal_flush_all_caches();
   drupal_set_message('Configuration saved.');
 }
