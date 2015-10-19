@@ -173,7 +173,7 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE, 'object_paging' => TRUE));
   // Map the results using a default Datetime for missing issued dates.
   $map_results = function($o) use ($page_field){
-    if (array_key_exists($page_field, $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o[$page_field][0])) {
+    if (array_key_exists($page_field, $o) && is_array($o[$page_field]) && isset($o[$page_field][0])) {
       $o[$page_field] = $o[$page_field][0];
     }
     else {
@@ -201,10 +201,23 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $sort = function($a, $b) {
     $a = (is_array($a) && isset($a['page'])) ? $a['page'] : 0;
     $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
-    if ($a == $b) {
-      return 0;
+
+    $alpha_sort = function($a, $b) {
+      return strcasecmp($a, $b);
+    };
+    $numeric_sort = function($a, $b) {
+      if ($a == $b) {
+        return 0;
+      }
+      return ($a < $b) ? -1 : 1;
+    };
+
+    if (is_numeric($a) && $is_numeric($b)) {
+      return $numeric_sort($a, $b);
+    } else {
+      return $alpha_sort($a, $b);
     }
-    return ($a < $b) ? -1 : 1;
+
   };
   uasort($pages, $sort);
 
