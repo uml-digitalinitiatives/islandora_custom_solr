@@ -514,6 +514,7 @@ function template_process_islandora_custom_solr_newspaper_page(array &$variables
     $variables['content'] = NULL;
   }
 }
+}
 
 /**
  * Theme the page navigator.
