@@ -203,7 +203,7 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
     $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
 
     $alpha_sort = function($a, $b) {
-      return strcasecmp($a, $b);
+      return strnatcasecmp($a, $b);
     };
     $numeric_sort = function($a, $b) {
       if ($a == $b) {
@@ -212,7 +212,7 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
       return ($a < $b) ? -1 : 1;
     };
 
-    if (is_numeric($a) && $is_numeric($b)) {
+    if (is_numeric($a) && is_numeric($b)) {
       return $numeric_sort($a, $b);
     } else {
       return $alpha_sort($a, $b);
