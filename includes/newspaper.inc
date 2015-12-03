@@ -399,9 +399,6 @@ function template_preprocess_islandora_custom_solr_newspaper_issue(array &$varia
   $variables['metadata'] = islandora_retrieve_metadata_markup($object);
   $variables['description'] = islandora_retrieve_description_markup($object);
 
-  // @todo: Remove after 7.x-1.5 release.
-  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
-  $variables['viewer'] = new IslandoraNewspaperDeprecateString($variables, 'viewer', 'template_process_islandora_custom_solr_newspaper_issue');
 }
 
 /**
@@ -417,18 +414,13 @@ function template_preprocess_islandora_custom_solr_newspaper_issue(array &$varia
  *     viewer.
  */
 function template_process_islandora_custom_solr_newspaper_issue(array &$variables) {
-  // @todo: Remove condition with "IslandoraNewspaperDeprecateString" after
-  // 7.x-1.5 release.
-  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
-  if ($variables['viewer'] instanceof IslandoraNewspaperDeprecateString) {
-    $variables['viewer'] = NULL;
-    if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
-      $viewer_callback = islandora_get_viewer_callback($variables['viewer_id']);
-      if (function_exists($viewer_callback)) {
-        $viewer = $viewer_callback($variables['viewer_params'], $variables['object']);
-        if ($viewer) {
-          $variables['viewer'] = $viewer;
-        }
+  $variables['viewer'] = NULL;
+  if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
+    $viewer_callback = islandora_get_viewer_callback($variables['viewer_id']);
+    if (function_exists($viewer_callback)) {
+      $viewer = $viewer_callback($variables['viewer_params'], $variables['object']);
+      if ($viewer) {
+        $variables['viewer'] = $viewer;
       }
     }
   }
@@ -468,10 +460,6 @@ function template_preprocess_islandora_custom_solr_newspaper_page(array &$variab
   $variables['viewer_id'] = islandora_get_viewer_id('islandora_newspaper_page_viewers');
   $variables['viewer_params'] = $params;
 
-  // @todo: Remove after 7.x-1.5 release.
-  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
-  $variables['content'] = new IslandoraNewspaperDeprecateString($variables, 'content', 'template_process_islandora_newspaper_page');
-
   $variables['metadata'] = islandora_retrieve_metadata_markup($object);
   $variables['description'] = islandora_retrieve_description_markup($object);
 }
@@ -489,31 +477,23 @@ function template_preprocess_islandora_custom_solr_newspaper_page(array &$variab
  *     viewer.
  */
 function template_process_islandora_custom_solr_newspaper_page(array &$variables) {
-  // @todo: Remove condition with "IslandoraNewspaperDeprecateString" after
-  // 7.x-1.5 release.
-  module_load_include('inc', 'islandora_newspaper', 'theme/theme');
   $object = $variables['object'];
-  if ($variables['content'] instanceof IslandoraNewspaperDeprecateString) {
-    if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
-      $viewer_callback = islandora_get_viewer_callback($variables['viewer_id']);
-      if (function_exists($viewer_callback)) {
-        $viewer = $viewer_callback($variables['viewer_params'], $variables['object']);
-        if ($viewer) {
-          $variables['content'] = $viewer;
-        }
+  if ($variables['viewer_id'] && $variables['viewer_id'] != 'none') {
+    $viewer_callback = islandora_get_viewer_callback($variables['viewer_id']);
+    if (function_exists($viewer_callback)) {
+      $viewer = $viewer_callback($variables['viewer_params'], $variables['object']);
+      if ($viewer) {
+        $variables['content'] = $viewer;
       }
     }
-    // Fallback to image.
-    elseif (isset($object['JPG']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['JPG'])) {
-      $params = array(
-        'title' => $object->label,
-        'path' => url("islandora/object/{$object->id}/datastream/JPG/view"),
-      );
-      $variables['content'] = theme('image', $params);
-    }
-    else {
-      $variables['content'] = NULL;
-    }
+  }
+  // Fallback to image.
+  elseif (isset($object['JPG']) && islandora_datastream_access(ISLANDORA_VIEW_OBJECTS, $object['JPG'])) {
+    $params = array(
+      'title' => $object->label,
+      'path' => url("islandora/object/{$object->id}/datastream/JPG/view"),
+    );
+    $variables['content'] = theme('image', $params);
   }
   else {
     $variables['content'] = NULL;
