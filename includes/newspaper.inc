@@ -107,57 +107,100 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
  *     - issued: A DateTime object repersenting the date the issue was released.
  */
 function islandora_custom_solr_get_issues(AbstractObject $object) {
-  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
-  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
-  $page_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
-  $solr_param = array(
-    'rows' => 300000,
-    'limit' => 300000,
-    'fl' => $date_field . ', fgs_label_s, PID, ' . $page_field,
-    'hl' => 'false',
-    'facet' => 'false',
-  );
-  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
-  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
-    'facet' => FALSE,
-    'stripFQ' => array(
-      '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
-    ),
-  ));
 
-  // Map the results using a default Datetime for missing issued dates.
-  $map_results = function($o) use ($date_field, $page_field) {
-    try {
-      @$issued = new DateTime($o[$date_field]);
-    }
-    catch (Exception $e) {
-      // Use the current time as a place holder.
-      $issued = new DateTime();
-      $msg  = 'Failed to get issued date from SPARQL query for @pid';
-      $vars = array('@pid' => $o['PID']);
-      watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
-    }
-    if (array_key_exists($page_field, $o) && is_array($o[$page_field]) && isset($o[$page_field][0])) {
-      $o[$page_field] = $o[$page_field][0];
+  if (user_is_anonymous()) {
+    $cache_roles = 'anonymous';
+  }
+  else {
+    global $user;
+    $roles = $user->roles;
+    // Sort so we keep ordering consistent to reuse cache.
+    asort($roles);
+    $cache_roles = implode('_', $roles);
+  }
+
+  $issue_cache = &drupal_static(__FUNCTION__, array());
+  // separate cache object for each newspaper.
+  $cache_name = 'islandora_custom_solr_newspaper_issues_' . $object->id;
+
+  $issues = array();
+
+  if (!isset($issue_cache)) {
+    $cache = cache_get($cache_name);
+    if (!$cache) {
+      // Nothing in cache so initialize it with these roles.
+      $fetch = $cache_roles;
     }
     else {
-      $o[$page_field] = 0;
+      $issue_cache = $cache->data;
     }
-    return array(
-      'pid' => $o['PID'],
-      'label' => $o['fgs_label_s'],
-      'sequence' => $o[$page_field],
-      'issued' => $issued,
+  }
+
+  if (!isset($issue_cache[$cache_roles])) {
+    // No cache for this set of roles.
+    $fetch = $cache_roles;
+  }
+  else {
+    $issues = $issue_cache[$cache_roles];
+  }
+
+  if (isset($fetch)) {
+    // Need to build the cache for set of roles in fetch
+    $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+    $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+    $solr_param = array(
+      'rows' => 30000,
+      'limit' => 30000,
+      'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+      'hl' => 'false',
+      'facet' => 'false',
     );
-  };
-  $issues = array_map($map_results, $results);
-  // Grab the PIDs...
-  $get_pid = function($o) {
-    return $o['pid'];
-  };
-  $pids = array_map($get_pid, $issues);
-  // Make the PIDs the keys.
-  return count($pids) ? array_combine($pids, $issues) : array();
+    $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
+    $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
+      'facet' => FALSE,
+      'stripFQ' => array(
+        '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
+      ),
+    ));
+
+    // Map the results using a default Datetime for missing issued dates.
+    $map_results = function($o) use ($date_field) {
+      try {
+        @$issued = new DateTime($o[$date_field]);
+      }
+      catch (Exception $e) {
+        // Use the current time as a place holder.
+        $issued = new DateTime();
+        $msg  = 'Failed to get issued date from SPARQL query for @pid';
+        $vars = array('@pid' => $o['PID']);
+        watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
+      }
+      if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
+        $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+      }
+      else {
+        $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
+      }
+      return array(
+        'pid' => $o['PID'],
+        'label' => $o['fgs_label_s'],
+        'sequence' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+        'issued' => $issued,
+      );
+    };
+    $issues = array_map($map_results, $results);
+    // Grab the PIDs...
+    $get_pid = function($o) {
+      return $o['pid'];
+    };
+    $pids = array_map($get_pid, $issues);
+    // Make the PIDs the keys.
+    $issues = count($pids) ? array_combine($pids, $issues) : array();
+    $issue_cache[$fetch] = $issues;
+    cache_set($cache_name, $issue_cache);
+  }
+
+  return $issues;
 }
 
 function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
