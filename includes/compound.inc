@@ -17,7 +17,7 @@
  *   an array of pids
  */
 function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALSE) {
-  module_load_include('inc', 'islandora_solr_search', 'includes/query_processor');
+  module_load_include('inc', 'islandora_solr', 'includes/query_processor');
   $solr_build = new IslandoraSolrQueryProcessor();
 
   $escaped_pid = str_replace(':', '_', $pid);

@@ -5,7 +5,7 @@
  */
 
 function islandora_custom_solr_query($query, $solr_params, $options) {
-  module_load_include('inc', 'islandora_solr_search', 'includes/query_processor');
+  module_load_include('inc', 'islandora_solr', 'includes/query_processor');
   $solr_build = new IslandoraSolrQueryProcessor();
 
   $default_params = array(

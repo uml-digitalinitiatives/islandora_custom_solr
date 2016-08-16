@@ -166,7 +166,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
     // Map the results using a default Datetime for missing issued dates.
     $map_results = function($o) use ($date_field) {
       try {
-        @$issued = new DateTime($o[$date_field]);
+        @$issued = new DateTime($o['solr_doc'][$date_field]);
       }
       catch (Exception $e) {
         // Use the current time as a place holder.
@@ -175,15 +175,15 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
         $vars = array('@pid' => $o['PID']);
         watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
       }
-      if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
-        $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
+      if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o['solr_doc']) && is_array($o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
+        $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms'][0];
       }
       else {
         $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
       }
       return array(
         'pid' => $o['PID'],
-        'label' => $o['fgs_label_s'],
+        'label' => $o['solr_doc']['fgs_label_s'],
         'sequence' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
         'issued' => $issued,
       );
