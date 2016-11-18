@@ -49,6 +49,21 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
             ':input[name="replace_newspaper"]' => array('checked' => TRUE),
           ),
         ),
+        'newspaper_caching' => array(
+          '#type' => 'select',
+          '#title' => t('Cache newspaper issue listing pages'),
+          '#description' => t('Newspaper pages displaying lots of issues can be cached by selecting a time frame'),
+          '#options' => array(
+            -1 => t('None'),
+            30 => t('30 minutes'),
+            60 => t('1 hour'),
+            1440 => t('1 day'),
+            10080 => t('1 week'),
+            44640 => t('31 days'),
+            999999 => t('Permanent'),
+          ),
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_cache', -1),
+        ),
         'newspaper_date_field' => array(
           '#type' => 'textfield',
           '#title' => t('Issued date field'),
@@ -216,6 +231,7 @@ function islandora_custom_solr_admin_settings_form_submit(array $form, array &$f
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
   variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
   variable_set('islandora_custom_solr_newspaper_sequence', $form_state['values']['newspaper_sequence_field']);
+  variable_set('islandora_custom_solr_newspaper_cache', $form_state['values']['newspaper_caching']);
   drupal_flush_all_caches();
   drupal_set_message('Configuration saved.');
 }

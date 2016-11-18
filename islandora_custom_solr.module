@@ -28,12 +28,6 @@ function islandora_custom_solr_menu() {
  */
 function islandora_custom_solr_theme($existing, $type, $theme, $path) {
   return array(
-    'islandora_custom_solr_newspaper' => array(
-      'function' => '__islandora_custom_solr_theme_islandora_newspaper',
-      'pattern' => 'islandora_custom_solr_newspaper__',
-      'variables' => array('object' => NULL),
-      'file' => 'includes/newspaper.inc',
-    ),
     'islandora_custom_solr_newspaper_page_select' => array(
       'file' => 'includes/newspaper.inc',
       'variables' => array('object' => NULL),
@@ -112,7 +106,8 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
  */
 function islandora_custom_solr_islandora_newspapercmodel_islandora_view_object(AbstractObject $newspaper) {
   if (variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
-    $output = theme('islandora_custom_solr_newspaper', array('object' => $newspaper));
+    module_load_include('inc', 'islandora_custom_solr', 'includes/newspaper');
+    $output = __islandora_custom_solr_islandora_newspaper($newspaper);
     return array('islandora_custom_solr_newspaper' => $output);
   }
 }
