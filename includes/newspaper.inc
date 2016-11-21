@@ -122,6 +122,8 @@ function islandora_custom_solr_prerender_issues($element) {
               '@month' => $month_name,
               '@day' => $day,
             )),
+            '#prefix' => '<div>',
+            '#suffix' => '</div>',
             '#href' => "islandora/object/{$issue['pid']}",
             '#weight' => $day,
           );
