@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Functions for compound objects.
@@ -8,9 +9,9 @@
  * Return an array of pids that are part of a compound object.
  *
  * @param string $pid
- *   the pid of the object to get compound parts for
+ *   the pid of the object to get compound parts for.
  * @param bool $ret_title
- *   whether to return the title and sequence number along with the pid 
+ *   whether to return the title and sequence number along with the pid.
  *
  * @return array
  *   array of a single object pid, title and sequence number or
@@ -64,7 +65,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   }
 
   $escaped_field = "RELS_EXT_isSequenceNumberOf{$escaped_pid}_literal_ms";
-  $map = function($o) use ($escaped_field) {
+  $map = function ($o) use ($escaped_field) {
     return array(
       'pid' => $o["PID"],
       'title' => $o['fgs_label_s'],
@@ -75,7 +76,7 @@ function islandora_custom_solr_compound_object_get_parts($pid, $ret_title = FALS
   $results = array_map($map, $results);
 
   // Sort the objects into their proper order.
-  $sort = function($a, $b) {
+  $sort = function ($a, $b) {
     $a = $a['seq'];
     $b = $b['seq'];
     if ($a === $b) {

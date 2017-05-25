@@ -120,7 +120,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
             'required' => array(
               ':input[name="replace_book"]' => array('checked' => TRUE),
             ),
-          )
+          ),
         ),
       ),
     ),

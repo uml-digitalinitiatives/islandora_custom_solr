@@ -2,8 +2,8 @@
 
 /**
  * @file
- * islandora-custom-solr-newspaper-page.tpl.php
- * This is the template file for the object page for newspaper
+ * Islandora-custom-solr-newspaper-page.tpl.php
+ * This is the template file for the object page for newspaper.
  *
  * Available variables:
  * - $object: The Islandora object rendered in this template file
@@ -15,7 +15,6 @@
  *
  * @see template_preprocess_islandora_custom_solr_newspaper_page()
  * @see theme_islandora_newspaper_page()
- *
  */
 ?>
 <div class="islandora-newspaper-object islandora-custom-solr">

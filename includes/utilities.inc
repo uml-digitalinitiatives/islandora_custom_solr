@@ -1,9 +1,15 @@
 <?php
+
 /**
  * @file
  * Common functions.
  */
 
+/**
+ * Performs a custom query for stuff.
+ *
+ * TODO: Just use the IslandoraSolrQueryProcessor results.
+ */
 function islandora_custom_solr_query($query, $solr_params, $options) {
   module_load_include('inc', 'islandora_solr', 'includes/query_processor');
   $solr_build = new IslandoraSolrQueryProcessor();

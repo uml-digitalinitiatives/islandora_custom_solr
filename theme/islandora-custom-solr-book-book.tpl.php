@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Template file to style output.

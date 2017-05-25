@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Functions for newspaper Solr replacements.
@@ -68,10 +69,10 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
             '#prefix' => '<div>',
             '#suffix' => '</div>',
             '#text' => t("@month @day, @year", array(
-                '@year' => $year,
-                '@month' => $month_name,
-                '@day' => $day,
-                )),
+              '@year' => $year,
+              '@month' => $month_name,
+              '@day' => $day,
+            )),
             '#path' => "islandora/object/{$issue['pid']}",
             '#options' => array(
               'attributes' => array(),
@@ -93,7 +94,7 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
  *
  * The results are ordered by their RELS-EXT dateIssued property.
  * Older to newer.
- * Using your Solr index instead of the triplestore
+ * Using your Solr index instead of the triplestore.
  *
  * @param AbstractObject $object
  *   An AbstractObject representing a Fedora object.
@@ -120,7 +121,7 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   }
 
   $issue_cache = &drupal_static(__FUNCTION__, array());
-  // separate cache object for each newspaper.
+  // Separate cache object for each newspaper.
   $cache_name = 'islandora_custom_solr_newspaper_issues_' . $object->id;
 
   $issues = array();
@@ -145,52 +146,68 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   }
 
   if (isset($fetch)) {
-    // Need to build the cache for set of roles in fetch
+    // Need to build the cache for set of roles in fetch.
     $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
     $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+    $sequence_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
     $solr_param = array(
       'rows' => 30000,
       'limit' => 30000,
-      'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+      'fl' => $date_field . ', fgs_label_s, PID, ' . $sequence_field,
       'hl' => 'false',
       'facet' => 'false',
     );
     $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
-    $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
+    $results = islandora_custom_solr_query($solr_query, $solr_param, array(
+      'hl' => FALSE,
       'facet' => FALSE,
       'stripFQ' => array(
         '-RELS_EXT_hasModel_uri_ms:"info:fedora/islandora:newspaperIssueCModel"',
       ),
     ));
 
+    // Check the Solr doc array top and inside 'solr_doc'.
+    $check_fn = function ($o, $name) {
+      if (isset($o[$name])) {
+        return $o[$name];
+      }
+      elseif (isset($o['solr_doc'][$name])) {
+        return $o['solr_doc'][$name];
+      }
+      return "";
+    };
+
     // Map the results using a default Datetime for missing issued dates.
-    $map_results = function($o) use ($date_field) {
+    $map_results = function ($o) use ($date_field, $check_fn, $sequence_field) {
       try {
-        @$issued = new DateTime($o['solr_doc'][$date_field]);
+        @$issued = new DateTime($check_fn($o, $date_field));
       }
       catch (Exception $e) {
         // Use the current time as a place holder.
         $issued = new DateTime();
-        $msg  = 'Failed to get issued date from SPARQL query for @pid';
+        $msg = 'Failed to get issued date from SPARQL query for @pid';
         $vars = array('@pid' => $o['PID']);
         watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
       }
-      if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o['solr_doc']) && is_array($o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
-        $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['solr_doc']['RELS_EXT_isSequenceNumber_literal_ms'][0];
+      if (is_array($check_fn($o, $sequence_field))) {
+        $sequence = reset($check_fn($o, $sequence_field));
       }
       else {
-        $o['RELS_EXT_isSequenceNumber_literal_ms'] = 0;
+        $sequence = $check_fn($o, $sequence_field);
+      }
+      if (empty($sequence)) {
+        $sequence = 0;
       }
       return array(
-        'pid' => $o['PID'],
-        'label' => $o['solr_doc']['fgs_label_s'],
-        'sequence' => $o['RELS_EXT_isSequenceNumber_literal_ms'],
+        'pid' => $check_fn($o, 'PID'),
+        'label' => $check_fn($o, 'fgs_label_s'),
+        'sequence' => $sequence,
         'issued' => $issued,
       );
     };
     $issues = array_map($map_results, $results);
     // Grab the PIDs...
-    $get_pid = function($o) {
+    $get_pid = function ($o) {
       return $o['pid'];
     };
     $pids = array_map($get_pid, $issues);
@@ -203,6 +220,15 @@ function islandora_custom_solr_get_issues(AbstractObject $object) {
   return $issues;
 }
 
+/**
+ * Get the pages of the newspaper issue.
+ *
+ * @param AbstractObject $object
+ *   The newspaper issue object.
+ *
+ * @return array
+ *   Of the pages, with PIDs a keys.
+ */
 function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
   $page_field = variable_get('islandora_custom_solr_newspaper_sequence', 'RELS_EXT_isSequenceNumber_literal_ms');
@@ -213,9 +239,13 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
     'facet' => 'false',
   );
   $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperPageCModel\")";
-  $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE, 'object_paging' => TRUE));
+  $results = islandora_custom_solr_query(
+      $solr_query,
+      $solr_param,
+      array('hl' => FALSE, 'facet' => FALSE, 'object_paging' => TRUE)
+  );
   // Map the results using a default Datetime for missing issued dates.
-  $map_results = function($o) use ($page_field){
+  $map_results = function ($o) use ($page_field) {
     if (array_key_exists($page_field, $o) && is_array($o[$page_field]) && isset($o[$page_field][0])) {
       $o[$page_field] = $o[$page_field][0];
     }
@@ -231,7 +261,7 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $pages = array_map($map_results, $results);
 
   // Grab the PIDs...
-  $get_pid = function($o) {
+  $get_pid = function ($o) {
     return $o['pid'];
   };
   $pids = array_map($get_pid, $pages);
@@ -241,14 +271,14 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
   $pages = count($pids) ? array_combine($pids, $pages) : array();
 
   // Sort the pages into their proper order.
-  $sort = function($a, $b) {
+  $sort = function ($a, $b) {
     $a = (is_array($a) && isset($a['page'])) ? $a['page'] : 0;
     $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
 
-    $alpha_sort = function($a, $b) {
+    $alpha_sort = function ($a, $b) {
       return strnatcasecmp($a, $b);
     };
-    $numeric_sort = function($a, $b) {
+    $numeric_sort = function ($a, $b) {
       if ($a == $b) {
         return 0;
       }
@@ -257,7 +287,8 @@ function islandora_custom_solr_newspaper_get_pages(AbstractObject $object) {
 
     if (is_numeric($a) && is_numeric($b)) {
       return $numeric_sort($a, $b);
-    } else {
+    }
+    else {
       return $alpha_sort($a, $b);
     }
 
@@ -359,12 +390,12 @@ function template_preprocess_islandora_custom_solr_newspaper_page_controls(array
  * Get the newspaper object directly from the newspaperPage object.
  *
  * @param AbstractObject $object
- *   The newspaperPageCModel object
+ *   The newspaperPageCModel object.
  *
  * @return mixed
  *   an array of the PID or FALSE
  */
-function islandora_custom_solr_get_newspaper($object) {
+function islandora_custom_solr_get_newspaper(AbstractObject $object) {
   module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $parent_field = 'RELS_EXT_isMemberOf_uri_ms';
   $solr_param = array(

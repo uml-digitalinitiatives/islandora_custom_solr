@@ -1,7 +1,8 @@
 <?php
+
 /**
  * @file
- * Hooks and theme functions
+ * Hooks and theme functions.
  */
 
 require_once dirname(__FILE__) . '/includes/utilities.inc';
@@ -150,7 +151,7 @@ function islandora_custom_solr_islandora_bookcmodel_islandora_view_object($objec
 /**
  * Implements hook_CMODEL_PID_islandora_view_object().
  */
-function islandora_custom_solr_islandora_compoundCModel_islandora_view_object($object) {
+function islandora_custom_solr_islandora_compoundcmodel_islandora_view_object($object) {
   if (variable_get('islandora_custom_solr_replace_compound', FALSE)) {
     module_load_include('inc', 'islandora_custom_solr', 'includes/compound');
     $children = islandora_custom_solr_compound_object_get_parts($object->id);

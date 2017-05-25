@@ -1,7 +1,8 @@
 <?php
+
 /**
  * @file
- * Functions for Book Solr replacements
+ * Functions for Book Solr replacements.
  */
 
 /**
@@ -67,7 +68,7 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
   }
 
   // Get rid of the "extra" info...
-  $map = function($o) {
+  $map = function ($o) {
     if (array_key_exists('RELS_EXT_isSequenceNumber_literal_ms', $o) && is_array($o['RELS_EXT_isSequenceNumber_literal_ms']) && isset($o['RELS_EXT_isSequenceNumber_literal_ms'][0])) {
       $o['RELS_EXT_isSequenceNumber_literal_ms'] = $o['RELS_EXT_isSequenceNumber_literal_ms'][0];
     }
@@ -84,7 +85,7 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
   $pages = array_map($map, $results);
 
   // Grab the PIDs...
-  $get_pid = function($o) {
+  $get_pid = function ($o) {
     return $o['pid'];
   };
   $pids = array_map($get_pid, $pages);
@@ -94,7 +95,7 @@ function islandora_custom_solr_get_book_pages(AbstractObject $object) {
   $pages = count($pids) ? array_combine($pids, $pages) : array();
 
   // Sort the pages into their proper order.
-  $sort = function($a, $b) {
+  $sort = function ($a, $b) {
     $a = (is_array($a) && isset($a['page'])) ? $a['page'] : 0;
     $b = (is_array($b) && isset($b['page'])) ? $b['page'] : 0;
     if ($a == $b) {
