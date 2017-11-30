@@ -33,7 +33,6 @@ function islandora_custom_solr_preprocess_islandora_custom_solr_book_book(array 
  *   All the pages in the given paged content object.
  */
 function islandora_custom_solr_get_book_pages(AbstractObject $object) {
-  module_load_include('inc', 'islandora_solr', 'includes/query_processor');
   $solr_build = new IslandoraSolrQueryProcessor();
 
   $parent_field = variable_get('islandora_book_parent_book_solr_field', 'RELS_EXT_isMemberOf_uri_ms');

@@ -69,23 +69,6 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
           'id' => 'fieldset-content-' . $year,
         ),
       );
-<<<<<<< HEAD
-      foreach ($days as $day => $issues) {
-        foreach ($issues as $issue) {
-          $tabs[$year][$month][$day][] = array(
-            '#theme' => 'link',
-            '#prefix' => '<div>',
-            '#suffix' => '</div>',
-            '#text' => t("@month @day, @year", array(
-              '@year' => $year,
-              '@month' => $month_name,
-              '@day' => $day,
-            )),
-            '#path' => "islandora/object/{$issue['pid']}",
-            '#options' => array(
-              'attributes' => array(),
-              'html' => FALSE,
-=======
       if ($first_year == $year) {
         foreach ($grouped_issues[$year] as $month => $days) {
           $month_name = t("@date", array(
@@ -96,7 +79,6 @@ function __islandora_custom_solr_theme_islandora_newspaper(array $variables) {
             '#type' => 'fieldset',
             '#attributes' => array(
               'class' => array('collapsible', 'collapsed', 'month'),
->>>>>>> Display one year at a time and load the others via AJAX
             ),
           );
           foreach ($days as $day => $issues) {
@@ -196,7 +178,7 @@ function __islandora_custom_solr_islandora_newspaper_ajax($object, $display_year
           '#prefix' => '<div>',
           '#suffix' => '</div>',
           '#text' => t("@month @day, @year", array(
-              '@year' => $year,
+              '@year' => $display_year,
               '@month' => $month_name,
               '@day' => $day,
               )),
@@ -243,7 +225,13 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
     'f.' . $date_field . '.facet.mincount' => 1,
     'f.' . $date_field . '.facet.range.gap' => '%2B1YEAR',
   );
-  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
+  $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
+  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
+    array(
+      '!parent_field' => $parent_field,
+      '!pid' => $object->id,
+    )
+  );
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
     'raw_results' => TRUE,
     'stripFQ' => array(
@@ -284,10 +272,16 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
 function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) {
   $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
   $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', '');
+  //TODO: Make a configurable variable
+  $seq_field = 'RELS_EXT_isSequenceNumber_literal_ms';
   $solr_param = array(
     'rows' => 30000,
     'limit' => 30000,
-    'fl' => $date_field . ', fgs_label_s, PID, RELS_EXT_isSequenceNumber_literal_ms',
+    'fl' => format_string('!date, fgs_label_s, PID, !seq',
+      array(
+        '!date' => $date_field,
+        '!seq' => $seq_field,
+      )),
     'hl' => 'false',
     'facet' => 'false',
   );
@@ -298,7 +292,14 @@ function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) 
     // In case $year is just an invalid string.
     $year = NULL;
   }
-  $solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
+  $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
+  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
+    array(
+      '!parent_field' => $parent_field,
+      '!pid' => $object->id,
+    )
+  );
+  //$solr_query = "($parent_field:\"info:fedora/{$object->id}\"+AND+RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")";
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE,
     'facet' => FALSE,
     'stripFQ' => array(
