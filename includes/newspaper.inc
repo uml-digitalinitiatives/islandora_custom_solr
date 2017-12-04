@@ -271,7 +271,7 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
     'facet' => 'true',
     'facet.field' => $date_field,
     'f.' . $date_field . '.facet.mincount' => 1,
-    'f.' . $date_field . '.facet.range.gap' => '%2B1YEAR',
+    'f.' . $date_field . '.facet.limit' => -1,
     'f.' . $date_field . '.facet.sort' => 'index',
   );
   $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
