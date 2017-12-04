@@ -24,7 +24,7 @@ function islandora_custom_solr_query($query, $solr_params, $options) {
   $solr_params = array_replace_recursive($default_params, $solr_params);
   $solr_build->buildQuery($query, $solr_params);
   //$solr_build->solrParams = array_merge_recursive($solr_build->solrParams, $solr_params);
-  $solr_build->solrParams = islandora_custom_solr_array_replace_recursive($solr_build->solrParams, $solr_params);
+  $solr_build->solrParams = array_replace_recursive($solr_build->solrParams, $solr_params);
   if (isset($options['hl']) && !$options['hl']) {
     $solr_build->solrParams['hl'] = 'false';
   }

@@ -1,7 +1,7 @@
 (function ($) {
   Drupal.behaviors.islandora_custom_solr = {
     attach: function(context, settings) {
-      jQuery('#islandora_custom_solr_ajax_nav .vertical-tab-button a').each(function() {
+      jQuery('#islandora_custom_solr_ajax_nav .vertical-tab-button a').once('islandora_custom_solr_ajax_nav', function() {
         // Use context to ensure the link is only ever activated if it's regenerated.
         var $mySpecialLink = $(this, context);
         var year = jQuery(this).children('strong').text();
@@ -17,7 +17,7 @@
       });
     }
   }
-  $.fn.islandora_custom_solr_finish_ajax = function() {
+  Drupal.islandora_custom_solr.islandora_custom_solr_finish_ajax = function() {
     jQuery(".fieldset-legend", this).wrapInner('<a href="#" class="fieldset-title"></a>').click(function(){
       jQuery(this).parents('legend').siblings(".fieldset-wrapper").toggle();
     });

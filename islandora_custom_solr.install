@@ -1,0 +1,23 @@
+<?php
+/**
+ * @file
+ * Schema and install hooks.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function islandora_custom_solr_uninstall() {
+  $variables = array(
+    'islandora_custom_solr_replace_newspaper',
+    'islandora_custom_solr_newspaper_issued_date',
+    'islandora_custom_solr_newspaper_relationship',
+    'islandora_custom_solr_newspaper_sequence_field',
+    'islandora_custom_solr_newspaper_ajax',
+    'islandora_custom_solr_replace_books',
+    'islandora_custom_solr_book_relationship',
+    'islandora_custom_solr_replace_compound',
+    'islandora_custom_solr_compound_relationship',
+  );
+  array_walk($variables, 'variable_del');
+}

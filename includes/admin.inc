@@ -17,6 +17,11 @@
  *   The Drupal form definition.
  */
 function islandora_custom_solr_admin_settings_form(array $form, array &$form_state) {
+  $use_ajax = FALSE;
+  if (module_exists('islandora_solr')) {
+    module_load_include('inc', 'islandora_solr', 'includes/utilities');
+    $use_ajax = (!islandora_solr_is_date_field(variable_get('islandora_custom_solr_newspaper_issued_date', '')));
+  }
   // Need the module to do the replacement.
   $req_modules = array(
     'newspaper' => module_exists('islandora_newspaper'),
@@ -54,7 +59,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
           '#title' => t('Issued date field'),
           '#description' => t('Solr field that contains the date issued of the newspaper.'),
           '#size' => 100,
-          '#default_value' => variable_get('islandora_custom_solr_newspaper_issued_date', ''),
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms'),
           '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
           '#states' => array(
             'required' => array(
@@ -80,7 +85,20 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
           '#title' => t('Newspaper relationship field'),
           '#description' => t('Solr field that contains the newspaper relationships.'),
           '#size' => 100,
-          '#default_value' => variable_get('islandora_custom_solr_newspaper_relationship', ''),
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms'),
+          '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
+          '#states' => array(
+            'required' => array(
+              ':input[name="replace_newspaper"]' => array('checked' => TRUE),
+            ),
+          ),
+        ),
+        'newspaper_sequence_field' => array(
+          '#type' => 'textfield',
+          '#title' => t('Newspaper sequence field'),
+          '#description' => t('Solr field holding alternate sequence numbers.'),
+          '#size' => 100,
+          '#default_value' => variable_get('islandora_custom_solr_newspaper_sequence_field', 'RELS_EXT_isSequenceNumber_literal_ms'),
           '#autocomplete_path' => 'islandora_solr/autocomplete_luke',
           '#states' => array(
             'required' => array(
@@ -91,8 +109,9 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
         'newspaper_ajax_issues' => array(
           '#type' => 'checkbox',
           '#title' => t('Load newspaper issues via AJAX.'),
-          '#description' => t('Load only one year on page load and the rest via AJAX when the year is clicked.'),
+          '#description' => t('Load years of issues via AJAX when the year is clicked. Requires a Solr date field for "Issued date field".'),
           '#return_value' => TRUE,
+          '#disabled' => $use_ajax,
           '#default_value' => variable_get('islandora_custom_solr_newspaper_ajax', FALSE),
         ),
       ),
@@ -222,7 +241,7 @@ function islandora_custom_solr_admin_settings_form_submit(array $form, array &$f
   variable_set('islandora_custom_solr_newspaper_relationship', $form_state['values']['newspaper_relation_field']);
   variable_set('islandora_custom_solr_book_relationship', $form_state['values']['book_relation_field']);
   variable_set('islandora_custom_solr_newspaper_issued_date', $form_state['values']['newspaper_date_field']);
-  variable_set('islandora_custom_solr_newspaper_sequence', $form_state['values']['newspaper_sequence_field']);
+  variable_set('islandora_custom_solr_newspaper_sequence_field', $form_state['values']['newspaper_sequence_field']);
   variable_set('islandora_custom_solr_newspaper_ajax', ($form_state['values']['newspaper_ajax_issues'] == 1));
   drupal_flush_all_caches();
   drupal_set_message('Configuration saved.');

@@ -105,8 +105,6 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
   if (
     in_array(strtolower($hook), array(
       'islandora_newspapercmodel_islandora_view_object',
-      'islandora_newspaperpagecmodel_islandora_view_object',
-      'islandora_newspaperissuecmodel_islandora_view_object',
     )) &&
     variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
     if (array_key_exists('islandora_newspaper', $implementations)) {
@@ -131,26 +129,6 @@ function islandora_custom_solr_module_implements_alter(&$implementations, $hook)
 function islandora_custom_solr_islandora_newspapercmodel_islandora_view_object(AbstractObject $newspaper) {
   if (variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
     $output = theme('islandora_custom_solr_newspaper', array('object' => $newspaper));
-    return array('islandora_custom_solr_newspaper' => $output);
-  }
-}
-
-/**
- * Implements hook_CMODEL_PID_islandora_view_object().
- */
-function islandora_custom_solr_islandora_newspaperissuecmodel_islandora_view_object($object, $page_number, $page_size) {
-  if (variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
-    $output = theme('islandora_custom_solr_newspaper_issue', array('object' => $object));
-    return array('islandora_custom_solr_newspaper' => $output);
-  }
-}
-
-/**
- * Implements hook_CMODEL_PID_islandora_view_object().
- */
-function islandora_custom_solr_islandora_newspaperpagecmodel_islandora_view_object($object, $page_number, $page_size) {
-  if (variable_get('islandora_custom_solr_replace_newspaper', FALSE)) {
-    $output = theme('islandora_custom_solr_newspaper_page', array('object' => $object));
     return array('islandora_custom_solr_newspaper' => $output);
   }
 }
