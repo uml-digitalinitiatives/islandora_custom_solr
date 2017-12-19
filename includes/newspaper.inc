@@ -261,49 +261,90 @@ function __islandora_custom_solr_islandora_newspaper_ajax(AbstractObject $object
  *   Sorted array of year values only.
  */
 function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object) {
-  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
-  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
-  $solr_param = array(
-    'rows' => 0,
-    'limit' => 0,
-    'fl' => $date_field,
-    'hl' => 'false',
-    'facet' => 'true',
-    'facet.field' => $date_field,
-    'f.' . $date_field . '.facet.mincount' => 1,
-    'f.' . $date_field . '.facet.limit' => -1,
-    'f.' . $date_field . '.facet.sort' => 'index',
-  );
-  $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
-  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
-    array(
-      '!parent_field' => $parent_field,
-      '!pid' => $object->id,
-    )
-  );
 
-  $solr_build = new IslandoraSolrQueryProcessor();
-  $solr_build->buildQuery($solr_query, $solr_param);
-  $solr_build->solrParams = array_replace_recursive(islandora_solr_remove_base_filters($solr_build->solrParams), $solr_param);
-
-  try {
-    $solr_build->executeQuery(FALSE);
-    $results = $solr_build->islandoraSolrResult['facet_counts']['facet_fields'][$date_field];
+  if (user_is_anonymous()) {
+    $cache_roles = 'anonymous';
   }
-  catch (Exception $e) {
-    $results = array();
-    drupal_set_message(check_plain(t('Error searching Solr index')) . ' ' . $e->getMessage(), 'error');
-
+  else {
+    global $user;
+    $roles = $user->roles;
+    // Sort so we keep ordering consistent to reuse cache.
+    asort($roles);
+    $cache_roles = implode('_', $roles);
   }
 
-  $map = function(&$val) {
-    $dt = new DateTime($val);
-    $val = $dt->format('Y');
-  };
-  $years = array_keys($results);
-  array_walk($years, $map);
-  $years = array_unique($years);
-  sort($years);
+  $years_cache = &drupal_static(__FUNCTION__, array());
+  // Separate cache object for each newspaper.
+  $cache_name = 'islandora_custom_solr_newspaper_years_' . $object->id;
+
+  $years = array();
+
+  if (!isset($years_cache)) {
+    $cache = cache_get($cache_name);
+    if (!$cache) {
+      // Nothing in cache so initialize it with these roles.
+      $fetch = $cache_roles;
+    }
+    else {
+      $years_cache = $cache->data;
+    }
+  }
+
+  if (!isset($years_cache[$cache_roles])) {
+    // No cache for this set of roles.
+    $fetch = $cache_roles;
+  }
+  else {
+    $years = $years_cache[$cache_roles];
+  }
+
+  if (isset($fetch)) {
+    $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+    $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
+    $solr_param = array(
+      'rows' => 0,
+      'limit' => 0,
+      'fl' => $date_field,
+      'hl' => 'false',
+      'facet' => 'true',
+      'facet.field' => $date_field,
+      'f.' . $date_field . '.facet.mincount' => 1,
+      'f.' . $date_field . '.facet.limit' => -1,
+      'f.' . $date_field . '.facet.sort' => 'index',
+    );
+    $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
+    AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
+      array(
+        '!parent_field' => $parent_field,
+        '!pid' => $object->id,
+      )
+    );
+
+    $solr_build = new IslandoraSolrQueryProcessor();
+    $solr_build->buildQuery($solr_query, $solr_param);
+    $solr_build->solrParams = array_replace_recursive(islandora_solr_remove_base_filters($solr_build->solrParams), $solr_param);
+
+    try {
+      $solr_build->executeQuery(FALSE);
+      $results = $solr_build->islandoraSolrResult['facet_counts']['facet_fields'][$date_field];
+    } catch (Exception $e) {
+      $results = array();
+      drupal_set_message(check_plain(t('Error searching Solr index')) . ' ' . $e->getMessage(), 'error');
+
+    }
+
+    $map = function (&$val) {
+      $dt = new DateTime($val);
+      $val = $dt->format('Y');
+    };
+    $years = array_keys($results);
+    array_walk($years, $map);
+    $years = array_unique($years);
+    sort($years);
+    $years_cache[$cache_roles] = $years;
+    cache_set($cache_name, $years_cache);
+  }
+
   return $years;
 }
 
@@ -329,24 +370,6 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
  *     - issued: A DateTime object repersenting the date the issue was released.
  */
 function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) {
-  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
-  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
-  $seq_field = variable_get('islandora_custom_solr_newspaper_sequence_field', 'RELS_EXT_isSequenceNumber_literal_ms');
-  $start = -1;
-  // Number of records to return at once.
-  $rows = 10000;
-  $count = 0;
-  $results = array();
-
-  $solr_build = new IslandoraSolrQueryProcessor();
-
-  $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
-  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
-    array(
-      '!parent_field' => $parent_field,
-      '!pid' => $object->id,
-    )
-  );
 
   if (user_is_anonymous()) {
     $cache_roles = 'anonymous';
@@ -385,6 +408,24 @@ function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) 
   }
 
   if (isset($fetch)) {
+    $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+    $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
+    $seq_field = variable_get('islandora_custom_solr_newspaper_sequence_field', 'RELS_EXT_isSequenceNumber_literal_ms');
+    $start = -1;
+    // Number of records to return at once.
+    $rows = 10000;
+    $count = 0;
+    $results = array();
+
+    $solr_build = new IslandoraSolrQueryProcessor();
+
+    $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
+  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
+      array(
+        '!parent_field' => $parent_field,
+        '!pid' => $object->id,
+      )
+    );
 
     do {
       $start += 1;
@@ -505,19 +546,3 @@ function islandora_custom_solr_get_newspaper(AbstractObject $object) {
   $results = islandora_custom_solr_query($solr_query, $solr_param, array('hl' => FALSE, 'facet' => FALSE));
   return reset($results);
 }
-
-/**
- * Process variables for islandora_newspaper_issue templates.
- *
- * Default template: islandora-newspaper-issue.tpl.php.
- *
- * @param array $variables
- *   An associative array containing:
- *   - object: An AbstractObject for which to generate the display.
- *   - viewer_id: The "ID" of the viewer to use.
- *   - viewer_params: An (associative) array of parameters to pass to the
- *     viewer.
- */
-function template_process_islandora_custom_solr_newspaper_issue(array &$variables) {
-}
-
