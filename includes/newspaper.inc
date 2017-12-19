@@ -273,9 +273,9 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
     $cache_roles = implode('_', $roles);
   }
 
-  $years_cache = &drupal_static(__FUNCTION__, array());
+  $years_cache = &drupal_static(__FUNCTION__);
   // Separate cache object for each newspaper.
-  $cache_name = 'islandora_custom_solr_newspaper_years_' . $object->id;
+  $cache_name = 'islandora_custom_solr_newspaper_years_' . str_replace(':', '_', $object->id);
 
   $years = array();
 
@@ -382,9 +382,9 @@ function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) 
     $cache_roles = implode('_', $roles);
   }
 
-  $issue_cache = &drupal_static(__FUNCTION__, array());
+  $issue_cache = &drupal_static(__FUNCTION__);
   // Separate cache object for each newspaper.
-  $cache_name = 'islandora_custom_solr_newspaper_issues_' . $object->id;
+  $cache_name = 'islandora_custom_solr_newspaper_issues_' . str_replace(':', '_', $object->id);
 
   $issues = array();
 
