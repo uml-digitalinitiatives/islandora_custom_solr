@@ -17,10 +17,5 @@
       });
     }
   }
-  Drupal.islandora_custom_solr.islandora_custom_solr_finish_ajax = function() {
-    jQuery(".fieldset-legend", this).wrapInner('<a href="#" class="fieldset-title"></a>').click(function(){
-      jQuery(this).parents('legend').siblings(".fieldset-wrapper").toggle();
-    });
-  }
 
 })(jQuery);
