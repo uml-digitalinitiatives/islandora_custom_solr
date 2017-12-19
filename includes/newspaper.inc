@@ -371,152 +371,112 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
  */
 function islandora_custom_solr_get_issues(AbstractObject $object, $year = NULL) {
 
-  if (user_is_anonymous()) {
-    $cache_roles = 'anonymous';
-  }
-  else {
-    global $user;
-    $roles = $user->roles;
-    // Sort so we keep ordering consistent to reuse cache.
-    asort($roles);
-    $cache_roles = implode('_', $roles);
-  }
+  $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
+  $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
+  $seq_field = variable_get('islandora_custom_solr_newspaper_sequence_field', 'RELS_EXT_isSequenceNumber_literal_ms');
+  $start = -1;
+  // Number of records to return at once.
+  $rows = 10000;
+  $count = 0;
+  $results = array();
 
-  $issue_cache = &drupal_static(__FUNCTION__);
-  // Separate cache object for each newspaper.
-  $cache_name = 'islandora_custom_solr_newspaper_issues_' . str_replace(':', '_', $object->id);
+  $solr_build = new IslandoraSolrQueryProcessor();
 
-  $issues = array();
+  $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
+AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
+    array(
+      '!parent_field' => $parent_field,
+      '!pid' => $object->id,
+    )
+  );
 
-  if (!isset($issue_cache)) {
-    $cache = cache_get($cache_name);
-    if (!$cache) {
-      // Nothing in cache so initialize it with these roles.
-      $fetch = $cache_roles;
-    }
-    else {
-      $issue_cache = $cache->data;
-    }
-  }
-
-  if (!isset($issue_cache[$cache_roles])) {
-    // No cache for this set of roles.
-    $fetch = $cache_roles;
-  }
-  else {
-    $issues = $issue_cache[$cache_roles];
-  }
-
-  if (isset($fetch)) {
-    $parent_field = variable_get('islandora_custom_solr_newspaper_relationship', 'RELS_EXT_isMemberOf_uri_ms');
-    $date_field = variable_get('islandora_custom_solr_newspaper_issued_date', 'RELS_EXT_dateIssued_literal_ms');
-    $seq_field = variable_get('islandora_custom_solr_newspaper_sequence_field', 'RELS_EXT_isSequenceNumber_literal_ms');
-    $start = -1;
-    // Number of records to return at once.
-    $rows = 10000;
-    $count = 0;
-    $results = array();
-
-    $solr_build = new IslandoraSolrQueryProcessor();
-
-    $solr_query = format_string("(!parent_field:(\"info:fedora/!pid\" OR \"!pid\")
-  AND RELS_EXT_hasModel_uri_ms:\"info:fedora/islandora:newspaperIssueCModel\")",
-      array(
-        '!parent_field' => $parent_field,
-        '!pid' => $object->id,
-      )
+  do {
+    $start += 1;
+    $solr_param = array(
+      'rows' => $rows,
+      'limit' => $rows,
+      'fl' => format_string('!date, !sequence, PID, fgs_label_s', array(
+        '!date' => $date_field,
+        '!sequence' => $seq_field,
+      )),
+      'start' => ($rows * $start),
+      'hl' => 'false',
+      'facet' => 'false',
     );
 
-    do {
-      $start += 1;
-      $solr_param = array(
-        'rows' => $rows,
-        'limit' => $rows,
-        'fl' => format_string('!date, !sequence, PID, fgs_label_s', array(
-          '!date' => $date_field,
-          '!sequence' => $seq_field,
-        )),
-        'start' => ($rows * $start),
-        'hl' => 'false',
-        'facet' => 'false',
-      );
+    if (!is_null($year) && preg_match('/^\d{4}$/', $year)) {
+      $solr_param['fq'] = array("$date_field:[ $year-01-01T00:00:00Z TO $year-12-31T23:59:59Z ]");
+      $solr_param['sort'] = "{$date_field} ASC";
+    }
 
-      if (!is_null($year) && preg_match('/^\d{4}$/', $year)) {
-        $solr_param['fq'] = array("$date_field:[ $year-01-01T00:00:00Z TO $year-12-31T23:59:59Z ]");
-        $solr_param['sort'] = "{$date_field} ASC";
-      }
+    $solr_build->buildQuery($solr_query, $solr_param);
+    $solr_build->solrParams = array_replace_recursive(islandora_solr_remove_base_filters($solr_build->solrParams), $solr_param);
 
-      $solr_build->buildQuery($solr_query, $solr_param);
-      $solr_build->solrParams = array_replace_recursive(islandora_solr_remove_base_filters($solr_build->solrParams), $solr_param);
+    try {
+      $solr_build->executeQuery(FALSE);
+      $count = $solr_build->islandoraSolrResult['response']['numFound'];
+      $results = array_merge($results, $solr_build->islandoraSolrResult['response']['objects']);
+    }
+    catch (Exception $error) {
+      drupal_set_message(check_plain(t('Error searching Solr index')) . ' ' . $error->getMessage(), 'error');
+    }
 
-      try {
-        $solr_build->executeQuery(FALSE);
-        $count = $solr_build->islandoraSolrResult['response']['numFound'];
-        $results = array_merge($results, $solr_build->islandoraSolrResult['response']['objects']);
-      }
-      catch (Exception $error) {
-        drupal_set_message(check_plain(t('Error searching Solr index')) . ' ' . $error->getMessage(), 'error');
-      }
+  } while ($count > ($rows * $start + $rows) && !isset($error));
 
-    } while ($count > ($rows * $start + $rows) && !isset($error));
-
-    // Check the Solr doc array top and inside 'solr_doc'.
-    $check_fn = function ($o, $name) {
-      $value = "";
-      if (isset($o[$name])) {
-        $value = $o[$name];
-      }
-      elseif (isset($o['solr_doc'][$name])) {
-        $value = $o['solr_doc'][$name];
-      }
-      if (is_array($value)) {
-        return reset($value);
-      }
-      else {
-        return $value;
-      }
-    };
-
-    // Map the results using a default Datetime for missing issued dates.
-    $map_results = function ($o) use ($date_field, $check_fn, $seq_field) {
-      try {
-        @$issued = new DateTime($check_fn($o, $date_field));
-      }
-      catch (Exception $e) {
-        // Use the current time as a place holder.
-        $issued = new DateTime();
-        $msg = 'Failed to get issued date from Solr query for @pid';
-        $vars = array('@pid' => $o['PID']);
-        watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
-      }
-      $sequence = $check_fn($o, $seq_field);
-      if (empty($sequence)) {
-        $sequence = 0;
-      }
-      return array(
-        'pid' => $o['PID'],
-        'label' => $o['object_label'],
-        'sequence' => $sequence,
-        'issued' => $issued,
-      );
-    };
-
-    $issues = array_map($map_results, $results);
-    // Grab the PIDs...
-    $get_pid = function ($o) {
-      return $o['pid'];
-    };
-
-    $pids = array_map($get_pid, $issues);
-    // Make the PIDs the keys.
-    if (count($pids) > 0) {
-      $issues = array_combine($pids, $issues);
-      $issue_cache[$fetch] = $issues;
-      cache_set($cache_name, $issue_cache);
+  // Check the Solr doc array top and inside 'solr_doc'.
+  $check_fn = function ($o, $name) {
+    $value = "";
+    if (isset($o[$name])) {
+      $value = $o[$name];
+    }
+    elseif (isset($o['solr_doc'][$name])) {
+      $value = $o['solr_doc'][$name];
+    }
+    if (is_array($value)) {
+      return reset($value);
     }
     else {
-      $issues = array();
+      return $value;
     }
+  };
+
+  // Map the results using a default Datetime for missing issued dates.
+  $map_results = function ($o) use ($date_field, $check_fn, $seq_field) {
+    try {
+      @$issued = new DateTime($check_fn($o, $date_field));
+    }
+    catch (Exception $e) {
+      // Use the current time as a place holder.
+      $issued = new DateTime();
+      $msg = 'Failed to get issued date from Solr query for @pid';
+      $vars = array('@pid' => $o['PID']);
+      watchdog_exception('islandora_newspaper', $e, $msg, $vars, WATCHDOG_ERROR);
+    }
+    $sequence = $check_fn($o, $seq_field);
+    if (empty($sequence)) {
+      $sequence = 0;
+    }
+    return array(
+      'pid' => $o['PID'],
+      'label' => $o['object_label'],
+      'sequence' => $sequence,
+      'issued' => $issued,
+    );
+  };
+
+  $issues = array_map($map_results, $results);
+  // Grab the PIDs...
+  $get_pid = function ($o) {
+    return $o['pid'];
+  };
+
+  $pids = array_map($get_pid, $issues);
+  // Make the PIDs the keys.
+  if (count($pids) > 0) {
+    $issues = array_combine($pids, $issues);
+  }
+  else {
+    $issues = array();
   }
   return $issues;
 }
