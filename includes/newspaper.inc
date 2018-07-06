@@ -275,12 +275,12 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
 
   $years_cache = &drupal_static(__FUNCTION__);
   // Separate cache object for each newspaper.
-  $cache_name = 'islandora_custom_solr_newspaper_years_' . str_replace(':', '_', $object->id);
+  $cache_name = ISLANDORA_CUSTOM_SOLR_CACHE_PREFIX . str_replace(':', '_', $object->id);
 
   $years = array();
 
   if (!isset($years_cache)) {
-    $cache = cache_get($cache_name);
+    $cache = cache_get($cache_name, ISLANDORA_CUSTOM_SOLR_CACHE_BIN);
     if (!$cache) {
       // Nothing in cache so initialize it with these roles.
       $fetch = $cache_roles;
@@ -342,7 +342,7 @@ function islandora_custom_solr_newspaper_get_years(AbstractFedoraObject $object)
     $years = array_unique($years);
     sort($years);
     $years_cache[$cache_roles] = $years;
-    cache_set($cache_name, $years_cache);
+    cache_set($cache_name, $years_cache, ISLANDORA_CUSTOM_SOLR_CACHE_BIN);
   }
 
   return $years;

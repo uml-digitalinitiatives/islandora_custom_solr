@@ -194,6 +194,7 @@ function islandora_custom_solr_admin_settings_form(array $form, array &$form_sta
       '#value' => t('Save configuration'),
     ),
   );
+  $form['#submit'][] = 'islandora_custom_solr_clear_newspaper_caches';
   return $form;
 }
 
@@ -260,4 +261,11 @@ function islandora_custom_solr_validate_solr_relationship($element, &$form_state
     empty($form_state['values']['islandora_custom_solr_compound_solr_relationship'])) {
     form_error($element, t('Compound Solr relationship field is required.'));
   }
+}
+
+/**
+ * Clear all newspaper year caches
+ */
+function islandora_custom_solr_clear_newspaper_caches() {
+  cache_clear_all(ISLANDORA_CUSTOM_SOLR_CACHE_PREFIX, ISLANDORA_CUSTOM_SOLR_CACHE_BIN, TRUE);
 }

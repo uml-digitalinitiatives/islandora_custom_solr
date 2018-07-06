@@ -7,6 +7,9 @@
 
 require_once dirname(__FILE__) . '/includes/utilities.inc';
 
+define('ISLANDORA_CUSTOM_SOLR_CACHE_PREFIX', 'islandora_custom_solr_newspaper_years_');
+define('ISLANDORA_CUSTOM_SOLR_CACHE_BIN', 'cache');
+
 /**
  * Implements hook_menu().
  */
